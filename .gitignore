@@ -1,2 +1,6 @@
 # ignore build dir
 build/
+
+# ignore executable file
+bin/socks5
+bin/socks5.ext
