@@ -1,0 +1,46 @@
+#pragma once
+
+namespace SocksV5 {
+
+/* SOCKSv5 Protocol Supported Methods Field */
+enum class Method : uint8_t {
+    NoAuth                  = 0x00,
+    GSSAPI                  = 0x01,
+    UserPassWd              = 0x02,
+    NoAcceptable            = 0xFF,
+};
+
+/* SOCKSv5 Client Request CMD Field */
+enum class RequestCMD : uint8_t {
+    Connect                 = 0x01,
+    Bind                    = 0x02,
+    UdpAssociate            = 0x03,
+};
+
+/* SOCKSv5 Client Request ATYP Field */
+enum class RequestATYP : uint8_t {
+    Ipv4                    = 0x01,
+    DoMainName              = 0x03,
+    Ipv6                    = 0x04,
+};
+
+/* SOCKSv5 Server Reply REP Field */
+enum class ReplyREP : uint8_t {
+    Succeeded               = 0x00,
+    GenServFailed           = 0x01,
+    NotAllowed              = 0x02,
+    NetworkUnreachable      = 0x03,
+    HostUnreachable         = 0x04,
+    ConnRefused             = 0x05,
+    TtlExpired              = 0x06,
+    CommandNotSupported     = 0x07,
+    AddrTypeNotSupported    = 0x08,
+};
+
+enum class ReplyATYPE : uint8_t {
+    Ipv4                    = 0x01,
+    DoMainName              = 0x03,
+    Ipv6                    = 0x04,
+};
+
+}   // namespace SocksV5
