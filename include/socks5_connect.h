@@ -121,6 +121,7 @@ private:
                               << (int)this->dst_addr[3] << "\n";
                     // 网络字节序转主机字节序
                     this->dst_port = ntohs(this->dst_port);
+                
                     std::cout << "dst_port : " << this->dst_port << '\n';
                     this->connect_dst_host();
                 }

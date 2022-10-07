@@ -11,4 +11,15 @@ include_directories(
 
 add_executable(socks5 main.cpp)
 
-target_link_libraries(socks5 pthread)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(socks5 pthread)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_link_libraries(socks5
+        crypt32
+        secur32
+        ws2_32
+        wsock32
+        pthread)
+else()
+    message(STATUS "Not Supported OS")
+endif()
