@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/socks5.dir/main.cpp.o -o ../bin/socks5  -lpthread 
