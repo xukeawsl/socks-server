@@ -3,4 +3,4 @@ build/
 
 # ignore executable file
 bin/socks5
-bin/socks5.ext
+bin/socks5.exe
