@@ -2,7 +2,14 @@ cmake_minimum_required(VERSION 3.16)
 
 project(SOCKS_SERVER)
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/../bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/../bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/../bin)
+
+file(GLOB_RECURSE srcs ${PROJECT_BINARY_DIR}/../src/*.cpp)
+
+add_library(socks5cpp SHARED
+    ${srcs}
+)
 
 include_directories(
     third-party/asio-1.24.0/include
@@ -12,9 +19,10 @@ include_directories(
 add_executable(socks5 main.cpp)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(socks5 pthread)
+    target_link_libraries(socks5 socks5cpp pthread)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_link_libraries(socks5
+        socks5cpp
         crypt32
         secur32
         ws2_32
