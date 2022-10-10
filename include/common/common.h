@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "asio.hpp"
+#include "common/logger.h"
 
 /* SOCKS Protocol Version Field */
 enum class SocksVersion : uint8_t {

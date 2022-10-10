@@ -22,7 +22,6 @@ void Socks5Server::start() {
     } catch (std::exception& e) {
         std::cerr << "[Socks5] Exception: " << e.what() << '\n';
     }
-    std::cout << "[Socks5] Started!\n";
 }
 
 void Socks5Server::stop() {
@@ -32,7 +31,6 @@ void Socks5Server::stop() {
             work_thread.join();
         }
     }
-    std::cout << "[Socks5] Stoped!\n";
 }
 
 void Socks5Server::wait_for_client() {

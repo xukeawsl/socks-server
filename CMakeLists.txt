@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
+add_compile_options("-g")
+
 add_subdirectory(third-party/spdlog-1.10.0)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/../bin)
@@ -25,9 +27,12 @@ include_directories(
 add_executable(socks5 main.cpp)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(socks5 socks5cpp pthread spdlog::spdlog)
+    target_link_libraries(socks5 PRIVATE
+        socks5cpp
+        pthread 
+        spdlog::spdlog)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    target_link_libraries(socks5
+    target_link_libraries(socks5 PRIVATE
         socks5cpp
         crypt32
         secur32
