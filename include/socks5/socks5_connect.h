@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "common/common.h"
 #include "socks5/socks5_type.h"
 
 class Socks5Connection : public std::enable_shared_from_this<Socks5Connection> {
