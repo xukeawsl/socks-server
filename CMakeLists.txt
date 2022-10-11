@@ -10,11 +10,11 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose Release or Debug" FORCE)
 endif()
 
-set(CMAKE_CXX_FLAGS "-Wno-attributes")
+
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused -DNDEBUG")
 
-set(BUILD_SHARED_LIBS ON)
+
 add_subdirectory(third-party/spdlog-1.10.0)
 
 message(STATUS "Build ${PROJECT_NAME}: ${PROJECT_VERSION}")
