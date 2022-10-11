@@ -22,6 +22,7 @@ void Socks5Server::start() {
     } catch (std::exception& e) {
         std::cerr << "[Socks5] Exception: " << e.what() << '\n';
     }
+    spdlog::info("Socks Server Start");
 }
 
 void Socks5Server::stop() {

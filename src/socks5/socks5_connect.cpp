@@ -27,7 +27,7 @@ void Socks5Connection::get_methods_list() {
     asio::async_read(socket, asio::buffer(this->methods.data(), this->methods.size()),
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
-                for (int i = 0; i < this->methods.size(); i++) {
+                for (size_t i = 0; i < this->methods.size(); i++) {
                     std::cout << "method " << (int)this->methods[i] << " is supported\n";
                 }
                 this->method = this->choose_method();

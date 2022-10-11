@@ -6,8 +6,6 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
-#define DEBUG
-
 class Logger {
 public:
     static Logger* getInstance() {
@@ -16,15 +14,15 @@ public:
     }
 
     bool Init(const std::string& log_file = "logs/log.txt",
-            long unsigned max_rotateSize = 1024 * 1024 * 10,
-            long unsigned max_rotateCount = 10) {
+              long unsigned max_rotateSize = 1024 * 1024 * 10,
+              long unsigned max_rotateCount = 10) {
         try {
             spdlog::init_thread_pool(8192, 1);
             auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
             auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_file,
                                                                                 max_rotateSize,
                                                                                 max_rotateCount);                           
-            #ifdef DEBUG
+            #ifndef NDEBUG
             spdlog::set_default_logger(std::make_shared<spdlog::async_logger>("debug_logger",
                                        spdlog::sinks_init_list({console_sink, file_sink}),
                                        spdlog::thread_pool(),
@@ -35,7 +33,6 @@ public:
                                         spdlog::thread_pool(),
                                         spdlog::async_overflow_policy::block));
             #endif
-            spdlog::info("debug");
         } catch(const spdlog::spdlog_ex& ex) {
             std::cout << "Logger Init Failed" << std::endl;
             return false;
