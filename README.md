@@ -7,7 +7,7 @@ git clone https://github.com/xukeawsl/socks-server.git
 mkdir build
 cd build
 ```
-* 构建 (默认 Deubug)
+* 构建 (默认 Debug)
 ```bash
 # Linux
 cmake ..
@@ -29,3 +29,7 @@ cmake -DLOG_LEVEL=Info ..
 
 # Release 和 Debug 构建默认的日志等级分别是 Info 和 Debug
 ```
+
+## TODO
+* 支持 socks-server 命令行选项
+* 完善功能和日志
