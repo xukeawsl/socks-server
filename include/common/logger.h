@@ -33,6 +33,34 @@ public:
                                         spdlog::thread_pool(),
                                         spdlog::async_overflow_policy::block));
             #endif
+
+            switch (SPDLOG_ACTIVE_LEVEL)
+            {
+            case SPDLOG_LEVEL_TRACE:
+                spdlog::set_level(spdlog::level::trace);
+                break;
+            case SPDLOG_LEVEL_DEBUG:
+                spdlog::set_level(spdlog::level::debug);
+                break;
+            case SPDLOG_LEVEL_INFO:
+                spdlog::set_level(spdlog::level::info);
+                break;
+            case SPDLOG_LEVEL_WARN:
+                spdlog::set_level(spdlog::level::warn);
+                break;
+            case SPDLOG_LEVEL_ERROR:
+                spdlog::set_level(spdlog::level::err);
+                break;
+            case SPDLOG_LEVEL_CRITICAL:
+                spdlog::set_level(spdlog::level::critical);
+                break;
+            case SPDLOG_LEVEL_OFF:
+                spdlog::set_level(spdlog::level::off);
+                break;
+            default:
+                break;
+            }
+
         } catch(const spdlog::spdlog_ex& ex) {
             std::cout << "Logger Init Failed" << std::endl;
             return false;

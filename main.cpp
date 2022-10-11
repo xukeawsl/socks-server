@@ -14,7 +14,6 @@ int main(int argc, char* argv[]) {
     sig.async_wait(signal_handler);
 
     Logger::getInstance()->Init();
-    spdlog::info("hello {}", "world");
     Socks5Server server("0.0.0.0", 7777);
     server.start();
 
