@@ -61,6 +61,8 @@ public:
                 break;
             }
 
+            spdlog::set_pattern("[%Y-%m-%d %T.%f] [%^%l%$] [thread %t] %v");
+
         } catch(const spdlog::spdlog_ex& ex) {
             std::cout << "Logger Init Failed" << std::endl;
             return false;

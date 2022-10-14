@@ -3,3 +3,6 @@ build/
 
 # ignore executable file
 bin/*
+
+# ignore .vscode
+.vscode/
