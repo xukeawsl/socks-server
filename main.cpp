@@ -1,9 +1,7 @@
 #include "socks5/socks5_server.h"
 
 void signal_handler(const asio::error_code& ec, int signal) {
-    if (signal == SIGINT) {
-        SPDLOG_INFO("Socks Server Normal Exit");
-    } else {
+    if (signal != SIGINT) {
         SPDLOG_ERROR("Socks Server Abnormal Exit!");
     }
 }

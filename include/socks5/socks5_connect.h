@@ -9,17 +9,56 @@ public:
 
     virtual ~Socks5Connection() {}
 
+
+    //  +----+----------+----------+
+    //  |VER | NMETHODS | METHODS |
+    //  +----+----------+----------+
+    //  | 1 | 1 | 1 to 255 |
+    //  +----+----------+----------+
+    // 1. The VER field is set to X’05’ for this version of the protocol
+    // 2. The NMETHODS field contains the number of method identifier octets that
+    //    appear in the METHODS field
     void start();
 
 private:
+    // 3. The METHODS is supported method list
+    //      (3.1) X’00’ NO AUTHENTICATION REQUIRED
+    //      (3.2) X’01’ GSSAPI
+    //      (3.3) X’02’ USERNAME/PASSWORD
+    //      (3.4) X’03’ to X’7F’ IANA ASSIGNED
+    //      (3.5) X’80’ to X’FE’ RESERVED FOR PRIVATE METHODS
+    //      (3.6) X’FF’ NO ACCEPTABLE METHODS
     void get_methods_list();
 
     SocksV5::Method choose_method();
 
+    //  +----+--------+
+    //  |VER | METHOD |
+    //  +----+--------+
+    //  | 1  |   1    |
+    //  +----+--------+
     void reply_support_method();
 
+
+    //  +----+-----+-------+------+----------+----------+
+    //  |VER | CMD | RSV | ATYP | DST.ADDR | DST.PORT   |
+    //  +----+-----+-------+------+----------+----------+
+    //  | 1  | 1   | X’00’ | 1  | Variable |     2      |
+    //  +----+-----+-------+------+----------+----------+
+    // (1) VER protocol version: X’05’
+    // (2) CMD
+    //      (2.1) CONNECT X’01’
+    //      (2.2) BIND X’02’
+    //      (2.3) UDP ASSOCIATE X’03’
+    // (3) RSV RESERVED
+    // (4) ATYP address type of following address
+    //      (4.1) IP V4 address: X’01’
+    //      (4.2) DOMAINNAME: X’03’
+    //      (4.3) IP V6 address: X’04’
     void get_socks_request();
 
+    // (5) DST.ADDR desired destination address
+    // (6) DST.PORT desired destination port in network octet order
     void get_dst_information();
 
     void parse_ipv4();
@@ -34,6 +73,29 @@ private:
 
     void connect_dst_host();
 
+    //  +----+-----+-------+------+----------+----------+
+    //  |VER | REP | RSV   | ATYP | BND.ADDR | BND.PORT |
+    //  +----+-----+-------+------+----------+----------+
+    //  | 1  | 1   | X’00’ | 1    | Variable |    2     |
+    //  +----+-----+-------+------+----------+----------+
+    // (1) VER protocol version: X’05’
+    // (2) REP Reply field:
+    //      (2.1) X’00’ succeeded
+    //      (2.2) X’01’ general SOCKS server failure
+    //      (2.3) X’02’ connection not allowed by ruleset
+    //      (2.4) X’03’ Network unreachable
+    //      (2.5) X’04’ Host unreachable
+    //      (2.6) X’05’ Connection refused
+    //      (2.7) X’06’ TTL expired
+    //      (2.8) X’07’ Command not supported
+    //      (2.9) X’08’ Address type not supported
+    // (3) RSV RESERVED
+    // (4) ATYP address type of following address
+    //      (4.1) IP V4 address: X’01’
+    //      (4.2) DOMAINNAME: X’03’
+    //      (4.3) IP V6 address: X’04’
+    // (5) BND.ADDR server bound address
+    // (6) BND.PORT server bound port in network octet order
     void reply_connect_result();
 
     void read_from_client();
@@ -48,6 +110,8 @@ protected:
     asio::io_context& ioc;
     asio::ip::tcp::socket socket;
     asio::ip::tcp::socket dst_socket;
+    std::vector<uint8_t> cli_addr;
+    uint16_t cli_port;
     SocksVersion ver;
     uint8_t rsv;
 

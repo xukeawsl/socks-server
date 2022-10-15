@@ -20,9 +20,12 @@ void Socks5Server::start() {
             work_thread = std::thread([this]{ ioc.run(); });
         }
     } catch (std::exception& e) {
-        std::cerr << "[Socks5] Exception: " << e.what() << '\n';
+        SPDLOG_ERROR("Socks Server Exception: {}", e.what());
     }
-    spdlog::info("Socks Server Start");
+    SPDLOG_INFO("Socks Server Start");
+    SPDLOG_DEBUG("Socks Server Listen on {}:{}",
+                 acceptor.local_endpoint().address().to_string(),
+                 acceptor.local_endpoint().port());
 }
 
 void Socks5Server::stop() {
@@ -32,6 +35,7 @@ void Socks5Server::stop() {
             work_thread.join();
         }
     }
+    SPDLOG_INFO("Socks Server Stop");
 }
 
 void Socks5Server::wait_for_client() {
@@ -39,14 +43,12 @@ void Socks5Server::wait_for_client() {
         // 不论 accept 成功还是失败都要继续监听
         wait_for_client();
         if (!ec) {
-            std::cout << "[Socks5] New Connection: " << socket.remote_endpoint() << '\n';
-            std::cout << "thread id : " << std::this_thread::get_id() << '\n';
-            
             // 用智能指针延续 socket 的生命期
             auto conn_ptr = std::make_shared<Socks5Connection>(ioc, std::move(socket));
             conn_ptr->start();
         } else {
-            std::cout << "Connection Denied\n";
+            SPDLOG_DEBUG("Connection Denied : {}",
+                        ec.message());
         }
     });
 }
