@@ -15,7 +15,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused -DNDEBUG")
 
 add_subdirectory(third-party/spdlog-1.10.0)
-add_subdirectory(third-party/nlohmann-3.11.2/json)
 
 message(STATUS "Build ${PROJECT_NAME}: ${PROJECT_VERSION}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
@@ -53,7 +52,7 @@ file(GLOB_RECURSE srcs ${PROJECT_BINARY_DIR}/../src/*.cpp)
 
 include_directories(
     third-party/asio-1.24.0/include
-    third-party/nlohmann-3.11.2/json/include
+    third-party/nlohmann-3.11.2/single_include
     include
 )
 
