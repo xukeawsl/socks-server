@@ -1,4 +1,5 @@
 #include "socks5/socks5_server.h"
+#include "option/parser.h"
 
 void signal_handler(const asio::error_code& ec, int signal) {
     if (signal != SIGINT) {
@@ -7,6 +8,10 @@ void signal_handler(const asio::error_code& ec, int signal) {
 }
 
 int main(int argc, char* argv[]) {
+    // parse command options
+
+
+    // execute socks server loop
     asio::io_context waiter;
     asio::signal_set sig(waiter, SIGINT);
     sig.async_wait(signal_handler);
