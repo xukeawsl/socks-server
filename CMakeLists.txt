@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused -DNDEBUG")
 
 add_subdirectory(third-party/spdlog-1.10.0)
-link_directories(third-party/boost-1.72.0/lib)
+add_subdirectory(third-party/nlohmann-3.11.2/json)
 
 message(STATUS "Build ${PROJECT_NAME}: ${PROJECT_VERSION}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
@@ -53,7 +53,7 @@ file(GLOB_RECURSE srcs ${PROJECT_BINARY_DIR}/../src/*.cpp)
 
 include_directories(
     third-party/asio-1.24.0/include
-    third-party/boost-1.72.0/include
+    third-party/nlohmann-3.11.2/json/include
     include
 )
 
@@ -62,8 +62,7 @@ add_executable(${PROJECT_NAME} main.cpp ${srcs})
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(${PROJECT_NAME} PRIVATE
         pthread 
-        spdlog::spdlog
-        boost_program_options)
+        spdlog::spdlog)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_link_libraries(${PROJECT_NAME} PRIVATE
         crypt32
@@ -71,8 +70,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         ws2_32
         wsock32
         pthread
-        spdlog::spdlog
-        boost_program_options)
+        spdlog::spdlog)
 else()
     message(STATUS "This operating system is not supported")
 endif()

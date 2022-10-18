@@ -31,5 +31,5 @@ cmake -DLOG_LEVEL=Info ..
 ```
 
 ## TODO
-* 支持 socks-server 命令行选项
+* 通过 `config.json` 配置文件来调整服务器参数
 * 完善功能和日志

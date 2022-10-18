@@ -1,2 +1,4 @@
 #include "option/parser.h"
-#include "program_options.hpp"
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
