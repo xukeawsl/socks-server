@@ -6,6 +6,3 @@ bin/*
 
 # ignore .vscode
 .vscode/
-
-# ignore .clang-format
-.clang-format

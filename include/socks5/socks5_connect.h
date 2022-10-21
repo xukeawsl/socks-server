@@ -9,14 +9,14 @@ public:
 
     virtual ~Socks5Connection() {}
 
-
     //  +----+----------+----------+
     //  |VER | NMETHODS | METHODS |
     //  +----+----------+----------+
     //  | 1 | 1 | 1 to 255 |
     //  +----+----------+----------+
     // 1. The VER field is set to X’05’ for this version of the protocol
-    // 2. The NMETHODS field contains the number of method identifier octets that
+    // 2. The NMETHODS field contains the number of method identifier octets
+    // that
     //    appear in the METHODS field
     void start();
 
@@ -38,7 +38,6 @@ private:
     //  | 1  |   1    |
     //  +----+--------+
     void reply_support_method();
-
 
     //  +----+-----+-------+------+----------+----------+
     //  |VER | CMD | RSV | ATYP | DST.ADDR | DST.PORT   |

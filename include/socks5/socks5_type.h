@@ -1,6 +1,7 @@
 #pragma once
 
 namespace SocksV5 {
+// clang-format off
 
 /* SOCKSv5 Protocol Supported Methods Field */
 enum class Method : uint8_t {
@@ -43,5 +44,6 @@ enum class ReplyATYPE : uint8_t {
     DoMainName              = 0x03,
     Ipv6                    = 0x04,
 };
+// clang-format on
 
-}   // namespace SocksV5
+}    // namespace SocksV5

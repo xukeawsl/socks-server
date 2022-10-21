@@ -1,12 +1,11 @@
 #include "socks5/socks5_server.h"
 
 Socks5Server::Socks5Server(const std::string& host, uint16_t port)
-        : acceptor(ioc, asio::ip::tcp::endpoint(asio::ip::make_address(host), port)),
-          work_threads(std::thread::hardware_concurrency()) {}
+    : acceptor(ioc,
+               asio::ip::tcp::endpoint(asio::ip::make_address(host), port)),
+      work_threads(std::thread::hardware_concurrency()) {}
 
-Socks5Server::~Socks5Server() {
-    stop();
-}
+Socks5Server::~Socks5Server() { stop(); }
 
 void Socks5Server::loop() {
     start();
@@ -17,7 +16,7 @@ void Socks5Server::start() {
     try {
         wait_for_client();
         for (auto& work_thread : work_threads) {
-            work_thread = std::thread([this]{ ioc.run(); });
+            work_thread = std::thread([this] { ioc.run(); });
         }
     } catch (std::exception& e) {
         SPDLOG_ERROR("Socks Server Exception: {}", e.what());
@@ -39,16 +38,17 @@ void Socks5Server::stop() {
 }
 
 void Socks5Server::wait_for_client() {
-    acceptor.async_accept([this](std::error_code ec, asio::ip::tcp::socket socket) {
-        // 不论 accept 成功还是失败都要继续监听
-        wait_for_client();
-        if (!ec) {
-            // 用智能指针延续 socket 的生命期
-            auto conn_ptr = std::make_shared<Socks5Connection>(ioc, std::move(socket));
-            conn_ptr->start();
-        } else {
-            SPDLOG_DEBUG("Connection Denied : {}",
-                        ec.message());
-        }
-    });
+    acceptor.async_accept(
+        [this](std::error_code ec, asio::ip::tcp::socket socket) {
+            // 不论 accept 成功还是失败都要继续监听
+            wait_for_client();
+            if (!ec) {
+                // 用智能指针延续 socket 的生命期
+                auto conn_ptr =
+                    std::make_shared<Socks5Connection>(ioc, std::move(socket));
+                conn_ptr->start();
+            } else {
+                SPDLOG_DEBUG("Connection Denied : {}", ec.message());
+            }
+        });
 }
