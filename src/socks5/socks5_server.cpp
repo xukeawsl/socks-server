@@ -1,9 +1,10 @@
 #include "socks5/socks5_server.h"
 
-Socks5Server::Socks5Server(const std::string& host, uint16_t port)
+Socks5Server::Socks5Server(const std::string& host, uint16_t port,
+                           size_t thread_num)
     : acceptor(ioc,
                asio::ip::tcp::endpoint(asio::ip::make_address(host), port)),
-      work_threads(std::thread::hardware_concurrency()) {}
+      work_threads(thread_num) {}
 
 Socks5Server::~Socks5Server() { stop(); }
 
@@ -25,6 +26,7 @@ void Socks5Server::start() {
     SPDLOG_DEBUG("Socks Server Listen on {}:{}",
                  acceptor.local_endpoint().address().to_string(),
                  acceptor.local_endpoint().port());
+    SPDLOG_DEBUG("Socks Server Work Thread Num : {}", work_threads.size());
 }
 
 void Socks5Server::stop() {

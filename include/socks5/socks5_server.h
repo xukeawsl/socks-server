@@ -5,8 +5,8 @@
 
 class Socks5Server : public noncopyable {
 public:
-    explicit Socks5Server(const std::string& host = "127.0.0.1",
-                          uint16_t port = 1080);
+    explicit Socks5Server(const std::string& host, uint16_t port,
+                          size_t thread_num);
 
     ~Socks5Server();
 

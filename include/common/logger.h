@@ -14,9 +14,8 @@ public:
         return &logger;
     }
 
-    bool Init(const std::string& log_file = "logs/log.txt",
-              long unsigned max_rotateSize = 1024 * 1024 * 10,
-              long unsigned max_rotateCount = 10) {
+    bool Init(const std::string& log_file, long unsigned max_rotateSize,
+              long unsigned max_rotateCount) {
         try {
             spdlog::init_thread_pool(8192, 1);
             auto console_sink =
