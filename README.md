@@ -56,6 +56,10 @@ cmake -DLOG_LEVEL=Info ..
    * `max_rotate_size` ：单个滚动日志文件的最大大小（默认为 1MB）
    * `max_rotate_count` ：最大滚动日志文件个数（默认10个）
  
+## docker-compose 部署
+```bash
+docker-compose up
+```
 
 ## TODO
 * 完善功能(目前只支持无认证模式)

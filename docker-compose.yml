@@ -1,0 +1,9 @@
+version: "2.0"
+
+services:
+  server:
+    image: xukeawsl/socks5-server:v1.0
+    ports:
+      - 1080:1080
+    environment:
+      - TZ=Asia/Shanghai

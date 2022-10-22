@@ -12,4 +12,4 @@ RUN apt-get update && apt-get install -y g++ && \
 RUN [ -d "./build" ] && rm ./build -r; echo ''
 RUN mkdir build && cd build && cmake .. && make
 
-CMD /bin/bash -c "./bin/socks_server"
+CMD cd build && /bin/bash -c "../bin/socks_server"
