@@ -58,7 +58,7 @@ cmake -DLOG_LEVEL=Info ..
  
 ## docker-compose 部署
 ```bash
-docker-compose up
+docker-compose up -d
 ```
 
 ## TODO
