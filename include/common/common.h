@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <unordered_set>
 #include <vector>
 
 #include "asio.hpp"
