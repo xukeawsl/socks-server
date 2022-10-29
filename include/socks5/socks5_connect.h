@@ -15,14 +15,13 @@ public:
     //  +----+----------+----------+
     //  | 1 | 1 | 1 to 255 |
     //  +----+----------+----------+
-    // 1. The VER field is set to X’05’ for this version of the protocol
-    // 2. The NMETHODS field contains the number of method identifier octets
-    // that
-    //    appear in the METHODS field
+    // (1) The VER field is set to X’05’ for this version of the protocol
+    // (2) The NMETHODS field contains the number of method identifier octets
+    // that appear in the METHODS field
     void start();
 
 private:
-    // 3. The METHODS is supported method list
+    // (3) The METHODS is supported method list
     //      (3.1) X’00’ NO AUTHENTICATION REQUIRED
     //      (3.2) X’01’ GSSAPI
     //      (3.3) X’02’ USERNAME/PASSWORD
@@ -40,6 +39,16 @@ private:
     //  +----+--------+
     void reply_support_method();
 
+    // +----+------+----------+------+----------+
+    // |VER | ULEN | UNAME | PLEN | PASSWD |
+    // +----+------+----------+------+----------+
+    // | 1 | 1 | 1 to 255 | 1 | 1 to 255 |
+    // +----+------+----------+------+----------+
+    // (1) The VER field contains the current version of the subnegotiation
+    // (2) The ULEN field contains the length of the UNAME field that follows
+    // (3) The UNAME field contains the username as known to the source operating system
+    // (4) The PLEN field contains the length of the PASSWD field that follows
+    // (5) The PASSWD field contains the password association with the given UNAME
     void get_username_length();
 
     void get_username_content();
@@ -48,6 +57,15 @@ private:
 
     void get_password_content();
 
+    //  +----+--------+
+    //  |VER | STATUS |
+    //  +----+--------+
+    //  | 1 | 1 |
+    //  +----+--------+
+    // (1) VER protocol version: X’05’
+    // (2) STATUS auth result
+    //      (2.1) SUCCESS X’00’
+    //      (2.2) FAILURE X’01’(STATUS value other than X’00’)
     void auth_and_respond();
 
     //  +----+-----+-------+------+----------+----------+
@@ -133,8 +151,8 @@ protected:
     uint8_t ulen;
     uint8_t plen;
     SocksV5::ReplyAuthStatus status;
-    std::vector<char> uname;
-    std::vector<char> passwd;
+    std::vector<uint8_t> uname;
+    std::vector<uint8_t> passwd;
 
     /* Request Step */
     SocksV5::Method method;

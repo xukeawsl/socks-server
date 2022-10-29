@@ -34,15 +34,19 @@ cmake -DLOG_LEVEL=Info ..
 ```json
 {
     "server" : {
-        "host" : "0.0.0.0",
-        "port" : 1080,
-        "thread_num" : 4
+        "host" : "127.0.0.1",
+        "port" : 1080
     },
     "log" : {
         "log_file" : "logs/server.log",
         "max_rotate_size" : 1048576,
         "max_rotate_count" : 10
-    }
+    },
+    "auth" : {
+        "username" : "socks-user",
+        "password" : "socks-passwd"
+    },
+    "supported-methods" : [0, 2]
 }
 ```
 
@@ -55,7 +59,15 @@ cmake -DLOG_LEVEL=Info ..
    * `log_file` ：日志文件的路径（相对路径是基于构建目录的，默认为 `logs/server.log`）
    * `max_rotate_size` ：单个滚动日志文件的最大大小（默认为 1MB）
    * `max_rotate_count` ：最大滚动日志文件个数（默认10个）
- 
+
+3. `auth` 配置代理服务器认证的用户名/密码
+   * `username` ：用户名(需要认证则必填)
+   * `password` ：密码(需要认证则必填)
+
+4. `supported-methods` 配置代理服务器支持的认证方法
+   * `0` : 不需要认证
+   * `2` : 需要用户名/密码认证
+
 ## docker-compose 部署
 ```bash
 docker-compose up -d
