@@ -74,4 +74,4 @@ docker-compose up -d
 ```
 
 ## TODO
-* 完善功能(目前只支持无认证模式)
+* 完善功能
