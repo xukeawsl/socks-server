@@ -1,13 +1,16 @@
 FROM ubuntu:20.04
-MAINTAINER xukeawsl xukeawsl@gmail.com
 
-ADD . /home
+COPY . /home
 
 WORKDIR /home
 
 RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list
-RUN apt-get update && apt-get install -y g++ && \
-    apt-get install -y cmake
+
+# Install Required Packages
+RUN apt-get update && apt-get install -y g++ cmake
+
+# Clean up APT when done.
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN [ -d "./build" ] && rm ./build -r; echo ''
 RUN mkdir build && cd build && cmake .. && make
