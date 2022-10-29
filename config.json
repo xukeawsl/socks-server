@@ -12,5 +12,5 @@
         "username" : "socks-user",
         "password" : "socks-passwd"
     },
-    "supported-methods" : [2]
+    "supported-methods" : [0, 2]
 }
