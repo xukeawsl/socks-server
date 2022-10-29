@@ -1,5 +1,9 @@
 # Socks5 代理服务器
 
+
+[![License](https://img.shields.io/npm/l/mithril.svg)](https://github.com/xukeawsl/socks-server/blob/master/LICENSE)
+
+
 ## 使用
 * 下载仓库并创建构建目录
 ```bash
