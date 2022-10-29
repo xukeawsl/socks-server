@@ -1,7 +1,7 @@
 {
     "server" : {
         "host" : "127.0.0.1",
-        "port" : 1090
+        "port" : 1080
     },
     "log" : {
         "log_file" : "logs/server.log",
