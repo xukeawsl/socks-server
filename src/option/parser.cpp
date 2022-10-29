@@ -4,13 +4,15 @@
 
 using json = nlohmann::json;
 
-ServerParser::ServerParser(const std::string& config_file)
+ServerParser::ServerParser()
     : host("127.0.0.1"),
       port(1080),
       thread_num(std::thread::hardware_concurrency()),
       log_file("logs/server.log"),
       max_rotate_size(1024 * 1024),
-      max_rotate_count(10) {
+      max_rotate_count(10) {}
+
+bool ServerParser::parse_config_file(const std::string& config_file) {
     std::ifstream f(config_file);
     json data = json::parse(f);
     auto server_config = data["server"];
@@ -39,4 +41,27 @@ ServerParser::ServerParser(const std::string& config_file)
                 log_config["max_rotate_count"].get<long unsigned>();
         }
     }
+    auto auth_config = data["auth"];
+    if (auth_config.is_object() && !auth_config.empty()) {
+        if (auth_config.contains("username")) {
+            username = auth_config["username"].get<std::string>();
+        } else {
+            return false;
+        }
+        if (auth_config.contains("password")) {
+            password = auth_config["password"].get<std::string>();
+        } else {
+            return false;
+        }
+    }
+    auto methods_config = data["supported-methods"];
+    if (methods_config.is_array() && !methods_config.empty()) {
+        for (size_t i = 0; i < methods_config.size(); i++) {
+            supported_methods.emplace(methods_config[i].get<SocksV5::Method>());
+        }
+    } else {    // 支持方法必填
+        return false;
+    }
+
+    return true;
 }

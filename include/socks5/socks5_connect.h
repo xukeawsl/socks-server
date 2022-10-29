@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/common.h"
+#include "option/parser.h"
 #include "socks5/socks5_type.h"
 
 class Socks5Connection : public std::enable_shared_from_this<Socks5Connection> {
@@ -38,6 +39,16 @@ private:
     //  | 1  |   1    |
     //  +----+--------+
     void reply_support_method();
+
+    void get_username_length();
+
+    void get_username_content();
+
+    void get_password_length();
+
+    void get_password_content();
+
+    void auth_and_respond();
 
     //  +----+-----+-------+------+----------+----------+
     //  |VER | CMD | RSV | ATYP | DST.ADDR | DST.PORT   |
@@ -114,9 +125,16 @@ protected:
     SocksVersion ver;
     uint8_t rsv;
 
-    /* Auth Step */
+    /* Associate Step */
     uint8_t nmethods;
     std::vector<SocksV5::Method> methods;
+
+    /* Auth Step*/
+    uint8_t ulen;
+    uint8_t plen;
+    SocksV5::ReplyAuthStatus status;
+    std::vector<char> uname;
+    std::vector<char> passwd;
 
     /* Request Step */
     SocksV5::Method method;

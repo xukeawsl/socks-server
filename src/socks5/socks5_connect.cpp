@@ -74,7 +74,7 @@ void Socks5Connection::get_methods_list() {
 
 SocksV5::Method Socks5Connection::choose_method() {
     for (auto method : this->methods) {
-        if (method == SocksV5::Method::NoAuth) {
+        if (ServerParser::global_config()->is_supported_method(method)) {
             return method;
         }
     }
@@ -98,7 +98,174 @@ void Socks5Connection::reply_support_method() {
                     this->socket.remote_endpoint().port(),
                     static_cast<int16_t>(this->ver),
                     static_cast<int16_t>(this->method));
-                this->get_socks_request();
+
+                switch (this->method) {
+                    case SocksV5::Method::NoAuth:
+                        this->get_socks_request();
+                        break;
+
+                    case SocksV5::Method::UserPassWd:
+                        this->get_username_length();
+                        break;
+
+                    case SocksV5::Method::GSSAPI:
+                        // not supported
+                        break;
+
+                    case SocksV5::Method::NoAcceptable:
+                        break;
+                }
+
+            } else {
+                SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
+                             static_cast<int16_t>(this->cli_addr[0]),
+                             static_cast<int16_t>(this->cli_addr[1]),
+                             static_cast<int16_t>(this->cli_addr[2]),
+                             static_cast<int16_t>(this->cli_addr[3]),
+                             this->cli_port);
+            }
+        });
+}
+
+void Socks5Connection::get_username_length() {
+    std::array<asio::mutable_buffer, 2> buf = {
+        {asio::buffer(&ver, 1), asio::buffer(&ulen, 1)}};
+    auto self = shared_from_this();
+    asio::async_read(
+        socket, buf, [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                SPDLOG_DEBUG(
+                    "Client {}:{} -> Proxy {}:{} DATA : [VER = X'{:02x}', ULEN "
+                    "= {}]",
+                    this->socket.remote_endpoint().address().to_string(),
+                    this->socket.remote_endpoint().port(),
+                    this->socket.local_endpoint().address().to_string(),
+                    this->socket.local_endpoint().port(),
+                    static_cast<int16_t>(this->ver),
+                    static_cast<int16_t>(this->ulen));
+
+                this->uname.resize(static_cast<std::size_t>(this->ulen));
+                this->get_username_content();
+            } else {
+                SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
+                             static_cast<int16_t>(this->cli_addr[0]),
+                             static_cast<int16_t>(this->cli_addr[1]),
+                             static_cast<int16_t>(this->cli_addr[2]),
+                             static_cast<int16_t>(this->cli_addr[3]),
+                             this->cli_port);
+            }
+        });
+}
+
+void Socks5Connection::get_username_content() {
+    auto self = shared_from_this();
+    asio::async_read(
+        socket, asio::buffer(this->uname.data(), this->uname.size()),
+        [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                SPDLOG_DEBUG(
+                    "Client {}:{} -> Proxy {}:{} DATA : [UNAME = {}]",
+                    this->socket.remote_endpoint().address().to_string(),
+                    this->socket.remote_endpoint().port(),
+                    this->socket.local_endpoint().address().to_string(),
+                    this->socket.local_endpoint().port(),
+                    std::string(this->uname.begin(), this->uname.end()));
+            
+                this->get_password_length();
+            } else {
+                SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
+                             static_cast<int16_t>(this->cli_addr[0]),
+                             static_cast<int16_t>(this->cli_addr[1]),
+                             static_cast<int16_t>(this->cli_addr[2]),
+                             static_cast<int16_t>(this->cli_addr[3]),
+                             this->cli_port);
+            }
+        });
+}
+
+void Socks5Connection::get_password_length() {
+    std::array<asio::mutable_buffer, 1> buf = {{asio::buffer(&plen, 1)}};
+    auto self = shared_from_this();
+    asio::async_read(
+        socket, buf, [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                SPDLOG_DEBUG(
+                    "Client {}:{} -> Proxy {}:{} DATA : [PLEN = {}]",
+                    this->socket.remote_endpoint().address().to_string(),
+                    this->socket.remote_endpoint().port(),
+                    this->socket.local_endpoint().address().to_string(),
+                    this->socket.local_endpoint().port(),
+                    static_cast<int16_t>(this->plen));
+
+                this->passwd.resize(static_cast<std::size_t>(this->plen));
+                this->get_password_content();
+            } else {
+                SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
+                             static_cast<int16_t>(this->cli_addr[0]),
+                             static_cast<int16_t>(this->cli_addr[1]),
+                             static_cast<int16_t>(this->cli_addr[2]),
+                             static_cast<int16_t>(this->cli_addr[3]),
+                             this->cli_port);
+            }
+        });
+}
+
+void Socks5Connection::get_password_content() {
+    auto self = shared_from_this();
+    asio::async_read(
+        socket, asio::buffer(this->passwd.data(), this->passwd.size()),
+        [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                SPDLOG_DEBUG(
+                    "Client {}:{} -> Proxy {}:{} DATA : [PASSWD = {}]",
+                    this->socket.remote_endpoint().address().to_string(),
+                    this->socket.remote_endpoint().port(),
+                    this->socket.local_endpoint().address().to_string(),
+                    this->socket.local_endpoint().port(),
+                    std::string(this->passwd.begin(), this->passwd.end()));
+
+                this->auth_and_respond();
+            } else {
+                SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
+                             static_cast<int16_t>(this->cli_addr[0]),
+                             static_cast<int16_t>(this->cli_addr[1]),
+                             static_cast<int16_t>(this->cli_addr[2]),
+                             static_cast<int16_t>(this->cli_addr[3]),
+                             this->cli_port);
+            }
+        });
+}
+
+void Socks5Connection::auth_and_respond() {
+    if (ServerParser::global_config()->check_username(
+            std::string(uname.begin(), uname.end())) &&
+        ServerParser::global_config()->check_password(
+            std::string(passwd.begin(), passwd.end()))) {
+        status = SocksV5::ReplyAuthStatus::Success;
+    } else {
+        status = SocksV5::ReplyAuthStatus::Failure;
+    }
+
+    std::array<asio::const_buffer, 2> buf = {
+        {asio::buffer(&ver, 1), asio::buffer(&status, 1)}};
+
+    auto self = shared_from_this();
+    asio::async_write(
+        socket, buf, [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                SPDLOG_DEBUG(
+                    "Proxy {}:{} -> Client {}:{} DATA : [VER = X'{:02x}', "
+                    "STATUS = X'{:02x}']",
+                    this->socket.local_endpoint().address().to_string(),
+                    this->socket.local_endpoint().port(),
+                    this->socket.remote_endpoint().address().to_string(),
+                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->ver),
+                    static_cast<int16_t>(this->status));
+
+                if (this->status == SocksV5::ReplyAuthStatus::Success) {
+                    this->get_socks_request();
+                }
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
                              static_cast<int16_t>(this->cli_addr[0]),

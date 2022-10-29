@@ -11,6 +11,12 @@ enum class Method : uint8_t {
     NoAcceptable            = 0xFF,
 };
 
+/* SOCKSv5 Server Reply Autu Status*/
+enum class ReplyAuthStatus : uint8_t {
+    Success                 = 0x00,
+    Failure                 = 0xFF,
+};
+
 /* SOCKSv5 Client Request CMD Field */
 enum class RequestCMD : uint8_t {
     Connect                 = 0x01,
