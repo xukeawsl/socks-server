@@ -24,11 +24,11 @@ int main(int argc, char* argv[]) {
             ServerParser::global_config()->get_max_rotate_size(),
             ServerParser::global_config()->get_max_rotate_count())) {
         SPDLOG_INFO("Log initialization succeeded");
-        SPDLOG_DEBUG("log_file : {}",
+        SPDLOG_INFO("log_file : {}",
                      ServerParser::global_config()->get_log_file());
-        SPDLOG_DEBUG("max_rotate_size : {} Bytes",
+        SPDLOG_INFO("max_rotate_size : {} Bytes",
                      ServerParser::global_config()->get_max_rotate_size());
-        SPDLOG_DEBUG("max_rotate_count : {}",
+        SPDLOG_INFO("max_rotate_count : {}",
                      ServerParser::global_config()->get_max_rotate_count());
     } else {
         SPDLOG_INFO("Log initialization failed!");
