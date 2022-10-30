@@ -26,8 +26,8 @@ void Socks5Server::start() {
     }
     SPDLOG_INFO("Socks Server Start");
     SPDLOG_INFO("Socks Server Listen on {}:{}",
-                 acceptor.local_endpoint().address().to_string(),
-                 acceptor.local_endpoint().port());
+                acceptor.local_endpoint().address().to_string(),
+                acceptor.local_endpoint().port());
     SPDLOG_INFO("Socks Server Work Thread Num : {}", work_threads.size());
 }
 
