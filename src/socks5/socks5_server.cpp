@@ -25,10 +25,10 @@ void Socks5Server::start() {
         SPDLOG_ERROR("Socks Server Exception: {}", e.what());
     }
     SPDLOG_INFO("Socks Server Start");
-    SPDLOG_DEBUG("Socks Server Listen on {}:{}",
+    SPDLOG_INFO("Socks Server Listen on {}:{}",
                  acceptor.local_endpoint().address().to_string(),
                  acceptor.local_endpoint().port());
-    SPDLOG_DEBUG("Socks Server Work Thread Num : {}", work_threads.size());
+    SPDLOG_INFO("Socks Server Work Thread Num : {}", work_threads.size());
 }
 
 void Socks5Server::stop() {
