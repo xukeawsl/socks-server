@@ -2,7 +2,7 @@ version: "2.0"
 
 services:
   server:
-    image: xukeawsl/socks5-server:v2.0
+    image: xukeawsl/socks5-server:v2.1
     ports:
       - 1080:1080
     environment:

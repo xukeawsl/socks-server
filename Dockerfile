@@ -13,6 +13,6 @@ RUN apt-get update && apt-get install -y g++ cmake
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN [ -d "./build" ] && rm ./build -r; echo ''
-RUN mkdir build && cd build && cmake .. && make
+RUN mkdir build && cd build && cmake -DCMAKE_BUILE_TYPE=Release .. && make
 
 CMD cd build && /bin/bash -c "../bin/socks_server"
