@@ -15,9 +15,11 @@ void Socks5Server::loop() {
 
 void Socks5Server::start() {
     try {
-        wait_for_client();
         for (auto& work_thread : work_threads) {
-            work_thread = std::thread([this] { ioc.run(); });
+            work_thread = std::thread([this] {
+                this->wait_for_client();
+                ioc.run();
+            });
         }
     } catch (std::exception& e) {
         SPDLOG_ERROR("Socks Server Exception: {}", e.what());

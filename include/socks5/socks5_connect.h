@@ -46,9 +46,10 @@ private:
     // +----+------+----------+------+----------+
     // (1) The VER field contains the current version of the subnegotiation
     // (2) The ULEN field contains the length of the UNAME field that follows
-    // (3) The UNAME field contains the username as known to the source operating system
-    // (4) The PLEN field contains the length of the PASSWD field that follows
-    // (5) The PASSWD field contains the password association with the given UNAME
+    // (3) The UNAME field contains the username as known to the source
+    // operating system (4) The PLEN field contains the length of the PASSWD
+    // field that follows (5) The PASSWD field contains the password association
+    // with the given UNAME
     void get_username_length();
 
     void get_username_content();

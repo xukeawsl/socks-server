@@ -25,10 +25,13 @@ void Socks5Connection::start() {
         socket, buf, [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [VER = X'{:02x}', "
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [VER = "
+                    "X'{:02x}', "
                     "NMETHODS = {}]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     static_cast<int16_t>(this->ver),
@@ -53,9 +56,12 @@ void Socks5Connection::get_methods_list() {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [METHODS ={:Xpn}]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [METHODS "
+                    "={:Xpn}]",
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     spdlog::to_hex(this->methods.begin(), this->methods.end()));
@@ -90,12 +96,15 @@ void Socks5Connection::reply_support_method() {
         socket, buf, [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Proxy {}:{} -> Client {}:{} DATA : [VER = X'{:02x}', "
+                    "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
+                    "X'{:02x}', "
                     "METHOD = X'{:02x}']",
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     static_cast<int16_t>(this->ver),
                     static_cast<int16_t>(this->method));
 
@@ -135,10 +144,13 @@ void Socks5Connection::get_username_length() {
         socket, buf, [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [VER = X'{:02x}', ULEN "
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [VER = "
+                    "X'{:02x}', ULEN "
                     "= {}]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     static_cast<int16_t>(this->ver),
@@ -164,13 +176,15 @@ void Socks5Connection::get_username_content() {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [UNAME = {}]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [UNAME = {}]",
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     std::string(this->uname.begin(), this->uname.end()));
-            
+
                 this->get_password_length();
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
@@ -190,9 +204,11 @@ void Socks5Connection::get_password_length() {
         socket, buf, [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [PLEN = {}]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [PLEN = {}]",
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     static_cast<int16_t>(this->plen));
@@ -217,9 +233,11 @@ void Socks5Connection::get_password_content() {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [PASSWD = {}]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [PASSWD = {}]",
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     std::string(this->passwd.begin(), this->passwd.end()));
@@ -254,12 +272,15 @@ void Socks5Connection::auth_and_respond() {
         socket, buf, [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Proxy {}:{} -> Client {}:{} DATA : [VER = X'{:02x}', "
+                    "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
+                    "X'{:02x}', "
                     "STATUS = X'{:02x}']",
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     static_cast<int16_t>(this->ver),
                     static_cast<int16_t>(this->status));
 
@@ -286,10 +307,13 @@ void Socks5Connection::get_socks_request() {
         socket, buf, [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [VER = X'{:02x}', CMD "
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [VER = "
+                    "X'{:02x}', CMD "
                     "= X'{:02x}, RSV = X'{:02x}', ATYP = X'{:02x}']",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     static_cast<int16_t>(this->ver),
@@ -331,10 +355,12 @@ void Socks5Connection::parse_ipv4() {
                 this->dst_port = ntohs(this->dst_port);
 
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [DST.ADDR = "
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [DST.ADDR = "
                     "{}.{}.{}.{}, DST.PORT = {}]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     static_cast<int16_t>(this->dst_addr[0]),
@@ -363,9 +389,12 @@ void Socks5Connection::parse_domain_length() {
         socket, buf, [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [DOMAIN_LENGTH = {}]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : "
+                    "[DOMAIN_LENGTH = {}]",
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
                     static_cast<int16_t>(this->dst_addr[0]));
@@ -427,8 +456,10 @@ void Socks5Connection::parse_port() {
                 SPDLOG_DEBUG(
                     "Client {}:{} -> Proxy {}:{} DATA : [DOMAIN_CONTENT = "
                     "{}({}.{}.{}.{}:{})]",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(), domain,
                     static_cast<int16_t>(addr[0]),
@@ -473,10 +504,12 @@ void Socks5Connection::connect_dst_host() {
                 this->bnd_addr = {addr[0], addr[1], addr[2], addr[3]};
 
                 SPDLOG_DEBUG(
-                    "Proxy {}:{} -> Server {}:{} Connection Successed", host,
-                    this->bnd_port,
-                    this->dst_socket.remote_endpoint().address().to_string(),
-                    this->dst_socket.remote_endpoint().port());
+                    "Proxy {}:{} -> Server {}.{}.{}.{}:{} Connection Successed",
+                    host, this->bnd_port,
+                    static_cast<int16_t>(this->dst_addr[0]),
+                    static_cast<int16_t>(this->dst_addr[1]),
+                    static_cast<int16_t>(this->dst_addr[2]),
+                    static_cast<int16_t>(this->dst_addr[3]), this->dst_port);
 
                 this->reply_connect_result();
             } else {
@@ -501,13 +534,16 @@ void Socks5Connection::reply_connect_result() {
         socket, buf, [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_DEBUG(
-                    "Proxy {}:{} -> Client {}:{} DATA : [VER = X'{:02x}', REP "
+                    "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
+                    "X'{:02x}', REP "
                     "= X'{:02x}', RSV = X'{:02x}' "
                     "ATYP = X'{:02x}', BND.ADDR = {}.{}.{}.{}, BND.PORT = {}]",
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     static_cast<int16_t>(this->ver),
                     static_cast<int16_t>(this->rep),
                     static_cast<int16_t>(this->rsv),
@@ -541,9 +577,11 @@ void Socks5Connection::read_from_client() {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_TRACE(
-                    "Client {}:{} -> Proxy {}:{} Data Length = {}",
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(),
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} Data Length = {}",
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(), length);
                 this->send_to_dst(length);
@@ -565,11 +603,14 @@ void Socks5Connection::send_to_dst(size_t write_length) {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_TRACE(
-                    "Proxy {}:{} -> Server {}:{} Data Length = {}",
+                    "Proxy {}:{} -> Server {}.{}.{}.{}:{} Data Length = {}",
                     this->dst_socket.local_endpoint().address().to_string(),
                     this->dst_socket.local_endpoint().port(),
-                    this->dst_socket.remote_endpoint().address().to_string(),
-                    this->dst_socket.remote_endpoint().port(), length);
+                    static_cast<int16_t>(this->dst_addr[0]),
+                    static_cast<int16_t>(this->dst_addr[1]),
+                    static_cast<int16_t>(this->dst_addr[2]),
+                    static_cast<int16_t>(this->dst_addr[3]), this->dst_port,
+                    length);
                 this->read_from_client();
             } else {
                 SPDLOG_TRACE("Server {}.{}.{}.{}:{} Closed",
@@ -589,9 +630,11 @@ void Socks5Connection::read_from_dst() {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_TRACE(
-                    "Server {}:{} -> Proxy {}:{} Data Length = {}",
-                    this->dst_socket.remote_endpoint().address().to_string(),
-                    this->dst_socket.remote_endpoint().port(),
+                    "Server {}.{}.{}.{}:{} -> Proxy {}:{} Data Length = {}",
+                    static_cast<int16_t>(this->dst_addr[0]),
+                    static_cast<int16_t>(this->dst_addr[1]),
+                    static_cast<int16_t>(this->dst_addr[2]),
+                    static_cast<int16_t>(this->dst_addr[3]), this->dst_port,
                     this->dst_socket.local_endpoint().address().to_string(),
                     this->dst_socket.local_endpoint().port(), length);
                 this->send_to_client(length);
@@ -613,11 +656,14 @@ void Socks5Connection::send_to_client(size_t write_length) {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_TRACE(
-                    "Proxy {}:{} -> Client {}:{} Data Length = {}",
+                    "Proxy {}:{} -> Client {}.{}.{}.{}:{} Data Length = {}",
                     this->socket.local_endpoint().address().to_string(),
                     this->socket.local_endpoint().port(),
-                    this->socket.remote_endpoint().address().to_string(),
-                    this->socket.remote_endpoint().port(), length);
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
+                    length);
                 this->read_from_dst();
             } else {
                 SPDLOG_TRACE("Client {}.{}.{}.{}:{} Closed",
