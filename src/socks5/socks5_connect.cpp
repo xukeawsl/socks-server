@@ -592,6 +592,7 @@ void Socks5Connection::read_from_client() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
+                this->dst_socket.close();
             }
         });
 }
@@ -619,6 +620,7 @@ void Socks5Connection::send_to_dst(size_t write_length) {
                              static_cast<int16_t>(this->dst_addr[2]),
                              static_cast<int16_t>(this->dst_addr[3]),
                              this->dst_port);
+                this->socket.close();
             }
         });
 }
@@ -645,6 +647,7 @@ void Socks5Connection::read_from_dst() {
                              static_cast<int16_t>(this->dst_addr[2]),
                              static_cast<int16_t>(this->dst_addr[3]),
                              this->dst_port);
+                this->socket.close();
             }
         });
 }
@@ -672,6 +675,7 @@ void Socks5Connection::send_to_client(size_t write_length) {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
+                this->dst_socket.close();
             }
         });
 }
