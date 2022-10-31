@@ -7,7 +7,7 @@ WORKDIR /home
 RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list
 
 # Install Required Packages
-RUN apt-get update && apt-get install -y g++ cmake
+RUN apt-get update && apt-get install -y --no-install-recommends  g++ cmake make
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
