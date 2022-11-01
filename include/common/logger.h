@@ -72,7 +72,7 @@ public:
 
 private:
     Logger() = default;
-    ~Logger() { spdlog::shutdown(); }
+    ~Logger() = default;
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
     Logger(Logger&&) = delete;
