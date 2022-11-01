@@ -6,7 +6,10 @@ Socks5Server::Socks5Server(const std::string& host, uint16_t port,
                asio::ip::tcp::endpoint(asio::ip::make_address(host), port)),
       work_threads(thread_num) {}
 
-Socks5Server::~Socks5Server() { stop(); }
+Socks5Server::~Socks5Server() {
+    stop();
+    spdlog::shutdown();
+}
 
 void Socks5Server::loop() {
     start();
