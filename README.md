@@ -80,5 +80,19 @@ cmake -DLOG_LEVEL=Info ..
 docker-compose up -d
 ```
 
+## Valgrind 内存检测
+* 检测程序是否存在内存泄漏：`valgrind --leck-check=full ../bin/socks-server`
+```valgrind
+==9516== HEAP SUMMARY:
+==9516==     in use at exit: 0 bytes in 0 blocks
+==9516==   total heap usage: 546 allocs, 546 frees, 4,461,344 bytes allocated
+==9516== 
+==9516== All heap blocks were freed -- no leaks are possible
+==9516== 
+==9516== For lists of detected and suppressed errors, rerun with: -s
+==9516== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+```
+
+
 ## TODO
 * 完善功能
