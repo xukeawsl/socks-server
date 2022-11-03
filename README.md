@@ -37,6 +37,7 @@ cmake -DLOG_LEVEL=Info ..
 ```
 
 ## 配置服务器参数
+* 通过修改 `config.json` 文件内容进行服务器参数配置
 ```json
 {
     "server" : {
@@ -75,6 +76,7 @@ cmake -DLOG_LEVEL=Info ..
    * `2` : 需要用户名/密码认证
 
 ## docker-compose 部署
+* 在 `docker-compose.yml` 所在目录下执行如下命令即可在后台自动部署服务
 ```bash
 docker-compose up -d
 ```
@@ -92,6 +94,99 @@ docker-compose up -d
 ==9516== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 ```
 
+## Benchmark 压力测试
+* 测试机器 : `AMD EPYC 7K62 48-Core @ 2.6 GHz`
+* 测试工具使用 https://github.com/cnlh/benchmark
+* 使用 cinatra 库在本地搭建 ping-pong 测试服务器 https://github.com/qicosmos/cinatra
+```cpp
+#include "cinatra.hpp"
+using namespace cinatra;
+
+int main() {
+    http_server server(std::thread::hardware_concurrency());
+    server.listen("127.0.0.1", "80");
+
+    server.set_http_handler<GET, POST>("/ping", [](request& req, response& res) {
+		res.set_status_and_content(status_type::ok, "pong");
+	});
+
+    server.run();
+	return 0;
+}
+```
+* 添加本地域名解析 `vim /etc/hosts`
+```bash
+127.0.0.1 www.test.com
+```
+
+* 测试结果 : `QPS 5w+`
+```bash
+# 为了对比,同时测试了不通过 socks5 代理的 qps
+
+# 单核 10w 次请求
+# -------------------------------
+# Requests/sec: 52246.70
+./benchmark -n 100000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
+# Requests/sec: 71339.23
+./benchmark -n 100000 http://www.test.com/ping
+# -------------------------------
+
+# 单核 100w 次请求
+# -------------------------------
+# Requests/sec: 55370.96
+./benchmark -n 1000000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
+# Requests/sec: 74878.21
+./benchmark -n 1000000 http://www.test.com/ping
+# -------------------------------
+
+# 多核 100 并发连接 10w 请求
+# -------------------------------
+# Requests/sec: 57208.55
+./benchmark -c 100 -n 100000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
+# Requests/sec: 79073.65
+./benchmark -c 100 -n 100000 http://www.test.com/ping
+# -------------------------------
+
+# 多核 1k 并发连接 10w 请求
+# -------------------------------
+# Requests/sec: 52723.17
+./benchmark -c 1000 -n 100000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
+# Requests/sec: 70791.46
+./benchmark -c 1000 -n 100000  http://www.test.com/ping
+# -------------------------------
+
+# 多核 1w 并发连接 10w 请求
+# -------------------------------
+# Requests/sec: 35685.05
+./benchmark -c 10000 -n 100000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
+# Requests/sec: 53245.33
+./benchmark -c 10000 -n 100000 http://www.test.com/ping
+# -------------------------------
+
+# 多核 100 并发连接 100w 次请求
+# -------------------------------
+# Requests/sec: 58538.08
+./benchmark -c 100 -n 1000000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
+# Requests/sec: 81311.60
+./benchmark -c 100 -n 1000000 http://www.test.com/ping
+# -------------------------------
+
+# 多核 1k 并发连接 100w 次请求
+# -------------------------------
+# Requests/sec: 56402.21
+./benchmark -c 1000 -n 1000000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
+# Requests/sec: 75860.52
+./benchmark -c 1000 -n 1000000 http://www.test.com/ping
+# -------------------------------
+
+# 多核 1w 并发连接 100w 次请求
+# -------------------------------
+# Requests/sec: 49327.50
+./benchmark -c 10000 -n 1000000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
+# Requests/sec: 53207.59
+./benchmark -c 10000 -n 1000000 http://www.test.com/ping
+# -------------------------------
+```
+
 ## TODO
 * 完善功能
-* benchmark
