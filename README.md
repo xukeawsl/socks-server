@@ -188,5 +188,9 @@ int main() {
 # -------------------------------
 ```
 
+## 参考文档
+* [RFC1928 : SOCKS Protocol Version 5](https://www.rfc-editor.org/rfc/inline-errata/rfc1928.html)
+* [RFC1929 : Username/Password Authentication for SOCKS V5](https://www.rfc-editor.org/rfc/rfc1929.html)
+
 ## TODO
 * 完善功能
