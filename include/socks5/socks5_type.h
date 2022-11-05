@@ -45,7 +45,7 @@ enum class ReplyREP : uint8_t {
 };
 
 /* SOCKSv5 Server Reply ATYPE Field */
-enum class ReplyATYPE : uint8_t {
+enum class ReplyATYP : uint8_t {
     Ipv4                    = 0x01,
     DoMainName              = 0x03,
     Ipv6                    = 0x04,

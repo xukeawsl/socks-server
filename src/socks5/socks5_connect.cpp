@@ -333,13 +333,16 @@ void Socks5Connection::get_socks_request() {
 }
 
 void Socks5Connection::get_dst_information() {
+    reply_atyp = SocksV5::ReplyATYP::Ipv4;    // reply 只支持 ipv4
     if (request_atyp == SocksV5::RequestATYP::Ipv4) {
         dst_addr.resize(4);
         parse_ipv4();
     } else if (request_atyp == SocksV5::RequestATYP::DoMainName) {
-        reply_atyp = SocksV5::ReplyATYPE::Ipv4;    // reply 只支持 ipv4
         dst_addr.resize(UINT8_MAX);
         parse_domain();
+    } else if (request_atyp == SocksV5::RequestATYP::Ipv6) {
+        dst_addr.resize(16);
+        parse_ipv6();
     }
 }
 
@@ -367,6 +370,50 @@ void Socks5Connection::parse_ipv4() {
                     static_cast<int16_t>(this->dst_addr[1]),
                     static_cast<int16_t>(this->dst_addr[2]),
                     static_cast<int16_t>(this->dst_addr[3]), this->dst_port);
+                this->connect_dst_host();
+            } else {
+                SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
+                             static_cast<int16_t>(this->cli_addr[0]),
+                             static_cast<int16_t>(this->cli_addr[1]),
+                             static_cast<int16_t>(this->cli_addr[2]),
+                             static_cast<int16_t>(this->cli_addr[3]),
+                             this->cli_port);
+            }
+        });
+}
+
+void Socks5Connection::parse_ipv6() {
+    std::array<asio::mutable_buffer, 2> buf = {
+        {asio::buffer(dst_addr.data(), dst_addr.size()),
+         asio::buffer(&dst_port, 2)}};
+    auto self = shared_from_this();
+    asio::async_read(
+        socket, buf, [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                // 网络字节序转主机字节序
+                this->dst_port = ntohs(this->dst_port);
+                std::string ipv6_host = To16(this->dst_addr);
+
+                asio::ip::tcp::resolver resolver(this->ioc);
+                auto endpoints =
+                    resolver.resolve(ipv6_host, std::to_string(this->dst_port));
+
+                std::string host = endpoints->endpoint().address().to_string();
+                uint8_t addr[4];
+                std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
+                            &addr[1], &addr[2], &addr[3]);
+
+                SPDLOG_DEBUG(
+                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [DST.ADDR = "
+                    "{}, DST.PORT = {}]",
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
+                    this->socket.local_endpoint().address().to_string(),
+                    this->socket.local_endpoint().port(), std::move(ipv6_host),
+                    this->dst_port);
+                this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
                 this->connect_dst_host();
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
@@ -482,11 +529,7 @@ void Socks5Connection::parse_port() {
 
 void Socks5Connection::connect_dst_host() {
     auto self = shared_from_this();
-    std::string host;
-    for (int i = 0; i < 4; i++) {
-        host += std::to_string((uint16_t)dst_addr[i]);
-        if (i != 3) host += ".";
-    }
+    std::string host = To4(dst_addr);
 
     dst_socket.async_connect(
         asio::ip::tcp::endpoint(asio::ip::address::from_string(std::move(host)),
@@ -678,4 +721,23 @@ void Socks5Connection::send_to_client(size_t write_length) {
                 this->dst_socket.close();
             }
         });
+}
+
+std::string Socks5Connection::To16(const std::vector<uint8_t>& ipv6_addr) {
+    char ipv6[40] = {'\0'};
+    snprintf(ipv6, sizeof(ipv6),
+             "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%"
+             "02x%02x",
+             ipv6_addr[0], ipv6_addr[1], ipv6_addr[2], ipv6_addr[3],
+             ipv6_addr[4], ipv6_addr[5], ipv6_addr[6], ipv6_addr[7],
+             ipv6_addr[8], ipv6_addr[9], ipv6_addr[10], ipv6_addr[11],
+             ipv6_addr[12], ipv6_addr[13], ipv6_addr[14], ipv6_addr[15]);
+    return std::string(ipv6);
+}
+
+std::string Socks5Connection::To4(const std::vector<uint8_t>& ipv4_addr) {
+    char ipv4[16] = {'\0'};
+    snprintf(ipv4, sizeof(ipv4), "%d.%d.%d.%d", ipv4_addr[0], ipv4_addr[1],
+             ipv4_addr[2], ipv4_addr[3]);
+    return std::string(ipv4);
 }

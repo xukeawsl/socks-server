@@ -20,6 +20,10 @@ public:
     // that appear in the METHODS field
     void start();
 
+    static std::string To16(const std::vector<uint8_t>& ipv6_addr);
+
+    static std::string To4(const std::vector<uint8_t>& ipv4_addr);
+
 private:
     // (3) The METHODS is supported method list
     //      (3.1) X’00’ NO AUTHENTICATION REQUIRED
@@ -92,6 +96,8 @@ private:
 
     void parse_ipv4();
 
+    void parse_ipv6();
+
     void parse_domain();
 
     void parse_domain_length();
@@ -163,7 +169,7 @@ protected:
     uint16_t dst_port;
 
     /* Reply Step */
-    SocksV5::ReplyATYPE reply_atyp;
+    SocksV5::ReplyATYP reply_atyp;
     SocksV5::ReplyREP rep;
     std::vector<uint8_t> bnd_addr;
     uint16_t bnd_port;
