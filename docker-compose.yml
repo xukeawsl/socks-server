@@ -1,9 +1,17 @@
 version: "2.0"
 
+networks:
+  socks5_net:
+
 services:
-  server:
+  socks5-service:
     image: xukeawsl/socks5-server:v2.1
+    container_name: socks5-server
     ports:
       - 1080:1080
+    volumes:
+      - /var/log/socks5:/home/build/logs
+    networks:
+      - socks5_net
     environment:
       - TZ=Asia/Shanghai
