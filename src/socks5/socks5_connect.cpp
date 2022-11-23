@@ -4,15 +4,20 @@ Socks5Connection::Socks5Connection(asio::io_context& ioc_,
                                    asio::ip::tcp::socket socket_)
     : ioc(ioc_), socket(std::move(socket_)), dst_socket(ioc_) {
     if (socket.is_open()) {
-        SPDLOG_DEBUG("New Connection {}:{}",
-                     socket.remote_endpoint().address().to_string(),
-                     socket.remote_endpoint().port());
-        uint8_t addr[4];
-        std::sscanf(socket.remote_endpoint().address().to_string().c_str(),
-                    "%hhu.%hhu.%hhu.%hhu", &addr[0], &addr[1], &addr[2],
-                    &addr[3]);
-        cli_addr = {addr[0], addr[1], addr[2], addr[3]};
-        cli_port = socket.remote_endpoint().port();
+        try {
+            SPDLOG_DEBUG("New Connection {}:{}",
+                         socket.remote_endpoint().address().to_string(),
+                         socket.remote_endpoint().port());
+            uint8_t addr[4];
+            std::sscanf(socket.remote_endpoint().address().to_string().c_str(),
+                        "%hhu.%hhu.%hhu.%hhu", &addr[0], &addr[1], &addr[2],
+                        &addr[3]);
+            cli_addr = {addr[0], addr[1], addr[2], addr[3]};
+            cli_port = socket.remote_endpoint().port();
+        } catch (asio::system_error& ec) {
+            SPDLOG_DEBUG("Client Disconnected");
+            socket.close();
+        }
     }
 }
 
