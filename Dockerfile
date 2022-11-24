@@ -1,8 +1,8 @@
 FROM ubuntu:20.04
 
-COPY . /home
+COPY . /root/socks5-service
 
-WORKDIR /home
+WORKDIR /root/socks5-service
 
 RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list
 

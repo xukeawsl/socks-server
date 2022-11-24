@@ -5,14 +5,15 @@ networks:
 
 services:
   socks5-service:
-    image: xukeawsl/socks5-server:v2.2
+    image: xukeawsl/socks5-server:v2.3
     container_name: socks5-server
     ports:
       - 1080:1080
     volumes:
-      - /var/log/socks5:/home/build/logs
+      - /var/log/socks5:/root/socks5-service/build/logs
     networks:
       - socks5_net
     environment:
       - TZ=Asia/Shanghai
     restart: always
+    privileged: true
