@@ -14,9 +14,8 @@ Socks5Connection::Socks5Connection(asio::io_context& ioc_,
                         &addr[3]);
             cli_addr = {addr[0], addr[1], addr[2], addr[3]};
             cli_port = socket.remote_endpoint().port();
-        } catch (asio::system_error& ec) {
+        } catch (const asio::system_error&) {
             SPDLOG_DEBUG("Client Disconnected");
-            socket.close();
         }
     }
 }
@@ -400,26 +399,37 @@ void Socks5Connection::parse_ipv6() {
                 std::string ipv6_host = To16(this->dst_addr);
 
                 asio::ip::tcp::resolver resolver(this->ioc);
-                auto endpoints =
-                    resolver.resolve(ipv6_host, std::to_string(this->dst_port));
 
-                std::string host = endpoints->endpoint().address().to_string();
-                uint8_t addr[4];
-                std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
-                            &addr[1], &addr[2], &addr[3]);
+                try {
+                    auto endpoints = resolver.resolve(
+                        ipv6_host, std::to_string(this->dst_port));
 
-                SPDLOG_DEBUG(
-                    "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [DST.ADDR = "
-                    "{}, DST.PORT = {}]",
-                    static_cast<int16_t>(this->cli_addr[0]),
-                    static_cast<int16_t>(this->cli_addr[1]),
-                    static_cast<int16_t>(this->cli_addr[2]),
-                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->socket.local_endpoint().address().to_string(),
-                    this->socket.local_endpoint().port(), std::move(ipv6_host),
-                    this->dst_port);
-                this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
-                this->connect_dst_host();
+                    std::string host =
+                        endpoints->endpoint().address().to_string();
+                    uint8_t addr[4];
+                    std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
+                                &addr[1], &addr[2], &addr[3]);
+
+                    SPDLOG_DEBUG(
+                        "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [DST.ADDR "
+                        "= "
+                        "{}, DST.PORT = {}]",
+                        static_cast<int16_t>(this->cli_addr[0]),
+                        static_cast<int16_t>(this->cli_addr[1]),
+                        static_cast<int16_t>(this->cli_addr[2]),
+                        static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
+                        this->socket.local_endpoint().address().to_string(),
+                        this->socket.local_endpoint().port(), ipv6_host,
+                        this->dst_port);
+                    this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
+                    this->connect_dst_host();
+                } catch (const asio::system_error&) {
+                    SPDLOG_WARN("IPv6: {} Resolve Failed", ipv6_host);
+                    this->rep = SocksV5::ReplyREP::HostUnreachable;
+                    this->bnd_addr = {0, 0, 0, 0};
+                    this->bnd_port = 0;
+                    this->reply_connect_result();
+                }
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
                              static_cast<int16_t>(this->cli_addr[0]),
@@ -497,30 +507,39 @@ void Socks5Connection::parse_port() {
                 }
 
                 asio::ip::tcp::resolver resolver(this->ioc);
-                auto endpoints =
-                    resolver.resolve(domain, std::to_string(this->dst_port));
+                try {
+                    auto endpoints = resolver.resolve(
+                        domain, std::to_string(this->dst_port));
 
-                std::string host = endpoints->endpoint().address().to_string();
-                uint8_t addr[4];
-                std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
-                            &addr[1], &addr[2], &addr[3]);
+                    std::string host =
+                        endpoints->endpoint().address().to_string();
+                    uint8_t addr[4];
+                    std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
+                                &addr[1], &addr[2], &addr[3]);
 
-                SPDLOG_DEBUG(
-                    "Client {}:{} -> Proxy {}:{} DATA : [DOMAIN_CONTENT = "
-                    "{}({}.{}.{}.{}:{})]",
-                    static_cast<int16_t>(this->cli_addr[0]),
-                    static_cast<int16_t>(this->cli_addr[1]),
-                    static_cast<int16_t>(this->cli_addr[2]),
-                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->socket.local_endpoint().address().to_string(),
-                    this->socket.local_endpoint().port(), domain,
-                    static_cast<int16_t>(addr[0]),
-                    static_cast<int16_t>(addr[1]),
-                    static_cast<int16_t>(addr[2]),
-                    static_cast<int16_t>(addr[3]), this->dst_port);
+                    SPDLOG_DEBUG(
+                        "Client {}:{} -> Proxy {}:{} DATA : [DOMAIN_CONTENT = "
+                        "{}({}.{}.{}.{}:{})]",
+                        static_cast<int16_t>(this->cli_addr[0]),
+                        static_cast<int16_t>(this->cli_addr[1]),
+                        static_cast<int16_t>(this->cli_addr[2]),
+                        static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
+                        this->socket.local_endpoint().address().to_string(),
+                        this->socket.local_endpoint().port(), domain,
+                        static_cast<int16_t>(addr[0]),
+                        static_cast<int16_t>(addr[1]),
+                        static_cast<int16_t>(addr[2]),
+                        static_cast<int16_t>(addr[3]), this->dst_port);
 
-                this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
-                this->connect_dst_host();
+                    this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
+                    this->connect_dst_host();
+                } catch (const asio::system_error&) {
+                    SPDLOG_WARN("DOMAIN_CONTENT: {} Resolve Failed", domain);
+                    this->rep = SocksV5::ReplyREP::HostUnreachable;
+                    this->bnd_addr = {0, 0, 0, 0};
+                    this->bnd_port = 0;
+                    this->reply_connect_result();
+                }
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
                              static_cast<int16_t>(this->cli_addr[0]),
@@ -640,7 +659,6 @@ void Socks5Connection::read_from_client() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                this->dst_socket.close();
             }
         });
 }
@@ -668,7 +686,6 @@ void Socks5Connection::send_to_dst(size_t write_length) {
                              static_cast<int16_t>(this->dst_addr[2]),
                              static_cast<int16_t>(this->dst_addr[3]),
                              this->dst_port);
-                this->socket.close();
             }
         });
 }
@@ -695,7 +712,6 @@ void Socks5Connection::read_from_dst() {
                              static_cast<int16_t>(this->dst_addr[2]),
                              static_cast<int16_t>(this->dst_addr[3]),
                              this->dst_port);
-                this->socket.close();
             }
         });
 }
@@ -723,7 +739,6 @@ void Socks5Connection::send_to_client(size_t write_length) {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                this->dst_socket.close();
             }
         });
 }

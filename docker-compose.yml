@@ -5,7 +5,7 @@ networks:
 
 services:
   socks5-service:
-    image: xukeawsl/socks5-server:v2.3
+    image: xukeawsl/socks5-server:v2.4
     container_name: socks5-server
     ports:
       - 1080:1080
