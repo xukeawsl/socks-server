@@ -38,7 +38,6 @@ int main(int argc, char* argv[]) {
                         ServerParser::global_config()->get_port(),
                         ServerParser::global_config()->get_thread_num());
     server.start();
-
     waiter.run();
     return EXIT_SUCCESS;
 }
