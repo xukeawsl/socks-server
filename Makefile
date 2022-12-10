@@ -5,3 +5,8 @@ INCS = $(foreach dir, $(INC_DIRS), $(wildcard $(dir)/*.h))
 
 format:
 	@clang-format --style=file $(INCS) $(SRCS) main.cpp -i
+
+check:
+	@cd build && \
+	valgrind --log-file=memcheck.log --tool=memcheck --leak-check=full \
+	../bin/socks_server
