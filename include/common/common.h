@@ -2,13 +2,13 @@
 
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <list>
 #include <memory>
 #include <thread>
 #include <unordered_set>
 #include <vector>
-#include <list>
-#include <functional>
 
 #include "asio.hpp"
 #include "common/logger.h"
