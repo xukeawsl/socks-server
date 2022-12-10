@@ -1,8 +1,15 @@
 #include "socks5/socks5_connect.h"
 
-Socks5Connection::Socks5Connection(asio::io_context& ioc_,
-                                   asio::ip::tcp::socket socket_)
-    : ioc(ioc_), socket(std::move(socket_)), dst_socket(ioc_) {
+Socks5Connection::Socks5Connection(asio::io_context& ioc_)
+    : ioc(ioc_), socket(ioc_), dst_socket(ioc_) {
+    
+}
+
+asio::ip::tcp::socket& Socks5Connection::get_socket() {
+    return this->socket;
+}
+
+void Socks5Connection::start() {
     if (socket.is_open()) {
         try {
             SPDLOG_DEBUG("New Connection {}:{}",
@@ -14,14 +21,15 @@ Socks5Connection::Socks5Connection(asio::io_context& ioc_,
                         &addr[3]);
             cli_addr = {addr[0], addr[1], addr[2], addr[3]};
             cli_port = socket.remote_endpoint().port();
+
+            this->get_version_and_nmethods();
         } catch (const asio::system_error&) {
             SPDLOG_DEBUG("Client Disconnected");
         }
     }
 }
 
-void Socks5Connection::start() {
-    if (!socket.is_open()) return;
+void Socks5Connection::get_version_and_nmethods() {
     std::array<asio::mutable_buffer, 2> buf = {
         {asio::buffer(&ver, 1), asio::buffer(&nmethods, 1)}};
     auto self = shared_from_this();
@@ -556,7 +564,7 @@ void Socks5Connection::connect_dst_host() {
     std::string host = To4(dst_addr);
 
     dst_socket.async_connect(
-        asio::ip::tcp::endpoint(asio::ip::address::from_string(std::move(host)),
+        asio::ip::tcp::endpoint(asio::ip::address::from_string(host),
                                 dst_port),
         [this, self](asio::error_code ec) {
             if (!ec) {

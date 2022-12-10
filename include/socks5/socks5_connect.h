@@ -6,10 +6,19 @@
 
 class Socks5Connection : public std::enable_shared_from_this<Socks5Connection> {
 public:
-    Socks5Connection(asio::io_context& ioc_, asio::ip::tcp::socket socket_);
+    explicit Socks5Connection(asio::io_context& ioc_);
 
     virtual ~Socks5Connection() {}
 
+    static std::string To16(const std::vector<uint8_t>& ipv6_addr);
+
+    static std::string To4(const std::vector<uint8_t>& ipv4_addr);
+
+    asio::ip::tcp::socket& get_socket();
+
+    void start();
+
+private:
     //  +----+----------+----------+
     //  |VER | NMETHODS | METHODS |
     //  +----+----------+----------+
@@ -18,13 +27,8 @@ public:
     // (1) The VER field is set to X’05’ for this version of the protocol
     // (2) The NMETHODS field contains the number of method identifier octets
     // that appear in the METHODS field
-    void start();
+    void get_version_and_nmethods();
 
-    static std::string To16(const std::vector<uint8_t>& ipv6_addr);
-
-    static std::string To4(const std::vector<uint8_t>& ipv4_addr);
-
-private:
     // (3) The METHODS is supported method list
     //      (3.1) X’00’ NO AUTHENTICATION REQUIRED
     //      (3.2) X’01’ GSSAPI
