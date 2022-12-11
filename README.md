@@ -119,71 +119,71 @@ int main() {
 127.0.0.1 www.test.com
 ```
 
-* 测试结果 : `QPS 5w+`
+* 测试结果 : `QPS 8w+`
 ```bash
 # 为了对比,同时测试了不通过 socks5 代理的 qps
 
 # 单核 10w 次请求
 # -------------------------------
-# Requests/sec: 52246.70
+# Requests/sec: 74880.03
 ./benchmark -n 100000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
-# Requests/sec: 71339.23
+# Requests/sec: 175591.98
 ./benchmark -n 100000 http://www.test.com/ping
 # -------------------------------
 
 # 单核 100w 次请求
 # -------------------------------
-# Requests/sec: 55370.96
+# Requests/sec: 91743.10
 ./benchmark -n 1000000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
-# Requests/sec: 74878.21
+# Requests/sec: 215867.61
 ./benchmark -n 1000000 http://www.test.com/ping
 # -------------------------------
 
 # 多核 100 并发连接 10w 请求
 # -------------------------------
-# Requests/sec: 57208.55
+# Requests/sec: 127783.83
 ./benchmark -c 100 -n 100000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
-# Requests/sec: 79073.65
+# Requests/sec: 258914.98
 ./benchmark -c 100 -n 100000 http://www.test.com/ping
 # -------------------------------
 
 # 多核 1k 并发连接 10w 请求
 # -------------------------------
-# Requests/sec: 52723.17
+# Requests/sec: 81295.52
 ./benchmark -c 1000 -n 100000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
-# Requests/sec: 70791.46
+# Requests/sec: 187864.41
 ./benchmark -c 1000 -n 100000  http://www.test.com/ping
 # -------------------------------
 
 # 多核 1w 并发连接 10w 请求
 # -------------------------------
-# Requests/sec: 35685.05
+# Requests/sec: 48632.97
 ./benchmark -c 10000 -n 100000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
-# Requests/sec: 53245.33
+# Requests/sec: 101979.19
 ./benchmark -c 10000 -n 100000 http://www.test.com/ping
 # -------------------------------
 
 # 多核 100 并发连接 100w 次请求
 # -------------------------------
-# Requests/sec: 58538.08
+# Requests/sec: 115556.33
 ./benchmark -c 100 -n 1000000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
-# Requests/sec: 81311.60
+# Requests/sec: 275821.31
 ./benchmark -c 100 -n 1000000 http://www.test.com/ping
 # -------------------------------
 
 # 多核 1k 并发连接 100w 次请求
 # -------------------------------
-# Requests/sec: 56402.21
+# Requests/sec: 88920.73
 ./benchmark -c 1000 -n 1000000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
-# Requests/sec: 75860.52
+# Requests/sec: 213493.31
 ./benchmark -c 1000 -n 1000000 http://www.test.com/ping
 # -------------------------------
 
 # 多核 1w 并发连接 100w 次请求
 # -------------------------------
-# Requests/sec: 49327.50
+# Requests/sec: 69312.54
 ./benchmark -c 10000 -n 1000000 -proxy socks5://127.0.0.1:1080 http://www.test.com/ping
-# Requests/sec: 53207.59
+# Requests/sec: 124741.30
 ./benchmark -c 10000 -n 1000000 http://www.test.com/ping
 # -------------------------------
 ```
@@ -194,5 +194,5 @@ int main() {
 
 ## TODO
 * 完善功能
-* 改用多线程多 `io_context` 模型, 此模型的性能相比于原来使用的多线程单 `io_context` 来说稍低, 但是能够保证同一个连接的各种操作不会在不同的线程里执行
-* 淘汰不活跃的连接
+* 改用多线程多 `io_context` 模型, 此模型的性能相比于原来使用的多线程单 `io_context` 来说不需要担心资源竞争的问题, 可以保证一个连接的工作在一个线程内运行
+* 支持为套接字连接设置超时时间, 淘汰不活跃的连接
