@@ -78,8 +78,7 @@ void Socks5Connection::get_version_and_nmethods() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->ver),
                     static_cast<int16_t>(this->nmethods));
 
@@ -115,8 +114,7 @@ void Socks5Connection::get_methods_list() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     spdlog::to_hex(this->methods.begin(), this->methods.end()));
                 this->method = this->choose_method();
 
@@ -155,8 +153,7 @@ void Socks5Connection::reply_support_method() {
                     "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
                     "X'{:02x}', "
                     "METHOD = X'{:02x}']",
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->cli_addr[0]),
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
@@ -209,8 +206,7 @@ void Socks5Connection::get_username_length() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->ver),
                     static_cast<int16_t>(this->ulen));
 
@@ -240,8 +236,7 @@ void Socks5Connection::get_username_content() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     std::string(this->uname.begin(), this->uname.end()));
 
                 this->get_password_length();
@@ -269,8 +264,7 @@ void Socks5Connection::get_password_length() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->plen));
 
                 this->passwd.resize(static_cast<std::size_t>(this->plen));
@@ -299,8 +293,7 @@ void Socks5Connection::get_password_content() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     std::string(this->passwd.begin(), this->passwd.end()));
 
                 this->auth_and_respond();
@@ -337,8 +330,7 @@ void Socks5Connection::auth_and_respond() {
                     "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
                     "X'{:02x}', "
                     "STATUS = X'{:02x}']",
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->cli_addr[0]),
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
@@ -377,8 +369,7 @@ void Socks5Connection::get_socks_request() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->ver),
                     static_cast<int16_t>(this->cmd),
                     static_cast<int16_t>(this->rsv),
@@ -430,8 +421,7 @@ void Socks5Connection::parse_ipv4() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->dst_addr[0]),
                     static_cast<int16_t>(this->dst_addr[1]),
                     static_cast<int16_t>(this->dst_addr[2]),
@@ -485,8 +475,7 @@ void Socks5Connection::parse_ipv6() {
                         static_cast<int16_t>(this->cli_addr[1]),
                         static_cast<int16_t>(this->cli_addr[2]),
                         static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                        this->local_host,
-                        this->local_port, ipv6_host,
+                        this->local_host, this->local_port, ipv6_host,
                         this->dst_port);
                     this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
                     this->connect_dst_host();
@@ -525,8 +514,7 @@ void Socks5Connection::parse_domain_length() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->dst_addr[0]));
                 this->parse_domain_content(this->dst_addr[0]);
             } else {
@@ -597,8 +585,7 @@ void Socks5Connection::parse_port() {
                         static_cast<int16_t>(this->cli_addr[1]),
                         static_cast<int16_t>(this->cli_addr[2]),
                         static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                        this->local_host,
-                    this->local_port, domain,
+                        this->local_host, this->local_port, domain,
                         static_cast<int16_t>(addr[0]),
                         static_cast<int16_t>(addr[1]),
                         static_cast<int16_t>(addr[2]),
@@ -639,7 +626,8 @@ void Socks5Connection::connect_dst_host() {
                 std::string host;
                 try {
                     this->bnd_port = this->dst_socket.local_endpoint().port();
-                    host = this->dst_socket.local_endpoint().address().to_string();
+                    host =
+                        this->dst_socket.local_endpoint().address().to_string();
                 } catch (asio::system_error& ec) {
                     stop();
                 }
@@ -686,8 +674,7 @@ void Socks5Connection::reply_connect_result() {
                     "X'{:02x}', REP "
                     "= X'{:02x}', RSV = X'{:02x}' "
                     "ATYP = X'{:02x}', BND.ADDR = {}.{}.{}.{}, BND.PORT = {}]",
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->cli_addr[0]),
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
@@ -732,8 +719,7 @@ void Socks5Connection::read_from_client() {
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
-                    this->local_host,
-                    this->local_port, length);
+                    this->local_host, this->local_port, length);
 
                 this->keep_alive();
                 this->send_to_dst(length);
@@ -756,7 +742,8 @@ void Socks5Connection::send_to_dst(size_t write_length) {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_TRACE(
-                    "Proxy {}.{}.{}.{}:{} -> Server {}.{}.{}.{}:{} Data Length = {}",
+                    "Proxy {}.{}.{}.{}:{} -> Server {}.{}.{}.{}:{} Data Length "
+                    "= {}",
                     static_cast<int16_t>(this->bnd_addr[0]),
                     static_cast<int16_t>(this->bnd_addr[1]),
                     static_cast<int16_t>(this->bnd_addr[2]),
@@ -788,7 +775,8 @@ void Socks5Connection::read_from_dst() {
         [this, self](asio::error_code ec, size_t length) {
             if (!ec) {
                 SPDLOG_TRACE(
-                    "Server {}.{}.{}.{}:{} -> Proxy {}.{}.{}.{}:{} Data Length = {}",
+                    "Server {}.{}.{}.{}:{} -> Proxy {}.{}.{}.{}:{} Data Length "
+                    "= {}",
                     static_cast<int16_t>(this->dst_addr[0]),
                     static_cast<int16_t>(this->dst_addr[1]),
                     static_cast<int16_t>(this->dst_addr[2]),
@@ -796,7 +784,8 @@ void Socks5Connection::read_from_dst() {
                     static_cast<int16_t>(this->bnd_addr[0]),
                     static_cast<int16_t>(this->bnd_addr[1]),
                     static_cast<int16_t>(this->bnd_addr[2]),
-                    static_cast<int16_t>(this->bnd_addr[3]), this->dst_port, length);
+                    static_cast<int16_t>(this->bnd_addr[3]), this->dst_port,
+                    length);
 
                 this->keep_alive();
                 this->send_to_client(length);
@@ -820,8 +809,7 @@ void Socks5Connection::send_to_client(size_t write_length) {
             if (!ec) {
                 SPDLOG_TRACE(
                     "Proxy {}:{} -> Client {}.{}.{}.{}:{} Data Length = {}",
-                    this->local_host,
-                    this->local_port,
+                    this->local_host, this->local_port,
                     static_cast<int16_t>(this->cli_addr[0]),
                     static_cast<int16_t>(this->cli_addr[1]),
                     static_cast<int16_t>(this->cli_addr[2]),
