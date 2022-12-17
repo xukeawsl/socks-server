@@ -20,6 +20,7 @@ private:
 
 protected:
     size_t pool_size;
+    size_t conn_timeout;
     io_context_pool pool;
     asio::signal_set signals;
     asio::ip::tcp::acceptor acceptor;

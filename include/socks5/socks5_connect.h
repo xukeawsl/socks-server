@@ -18,7 +18,15 @@ public:
 
     void start();
 
+    void set_timeout(size_t second);
+
 private:
+    inline void keep_alive();
+
+    void check_deadline();
+
+    void stop();
+
     //  +----+----------+----------+
     //  |VER | NMETHODS | METHODS |
     //  +----+----------+----------+
@@ -149,10 +157,18 @@ protected:
     asio::io_context& ioc;
     asio::ip::tcp::socket socket;
     asio::ip::tcp::socket dst_socket;
+
+    std::string local_host;
+    uint16_t local_port;
+
     std::vector<uint8_t> cli_addr;
     uint16_t cli_port;
     SocksVersion ver;
     uint8_t rsv;
+
+    /* Life Cycle Management */
+    asio::steady_timer deadline;
+    size_t timeout;
 
     /* Associate Step */
     uint8_t nmethods;

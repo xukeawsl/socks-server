@@ -26,6 +26,8 @@ public:
         return max_rotate_count;
     }
 
+    inline size_t get_conn_timeout() const { return conn_timeout; }
+
     inline bool is_supported_method(SocksV5::Method method) const {
         return supported_methods.count(method) > 0;
     }
@@ -46,6 +48,7 @@ private:
     std::string host;
     uint16_t port;
     size_t thread_num;
+    size_t conn_timeout;
     std::string log_file;
     long unsigned max_rotate_size;
     long unsigned max_rotate_count;

@@ -3,6 +3,7 @@
 Socks5Server::Socks5Server(const std::string& host, uint16_t port,
                            size_t thread_num)
     : pool_size(thread_num),
+      conn_timeout(ServerParser::global_config()->get_conn_timeout()),
       pool(pool_size),
       signals(pool.get_io_context()),
       acceptor(pool.get_io_context()),
@@ -36,6 +37,7 @@ void Socks5Server::start() {
                 acceptor.local_endpoint().address().to_string(),
                 acceptor.local_endpoint().port());
     SPDLOG_INFO("Socks Server Work Thread Num : {}", pool_size);
+    SPDLOG_INFO("Socks Server Connection Timeout : {}s", conn_timeout);
     try {
         pool.run();
     } catch (std::system_error& e) {
@@ -54,6 +56,7 @@ void Socks5Server::wait_for_client() {
     acceptor.async_accept(
         new_conn_ptr->get_socket(), [this](std::error_code ec) {
             if (!ec) {
+                this->new_conn_ptr->set_timeout(this->conn_timeout);
                 this->new_conn_ptr->start();
             } else {
                 SPDLOG_DEBUG("Connection Denied : {}", ec.message());

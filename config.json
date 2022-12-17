@@ -12,5 +12,6 @@
         "username" : "socks-user",
         "password" : "socks-passwd"
     },
-    "supported-methods" : [0, 2]
+    "supported-methods" : [0, 2],
+    "timeout" : 60
 }

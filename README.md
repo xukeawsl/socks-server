@@ -53,7 +53,8 @@ cmake -DLOG_LEVEL=Info ..
         "username" : "socks-user",
         "password" : "socks-passwd"
     },
-    "supported-methods" : [0, 2]
+    "supported-methods" : [0, 2],
+    "timeout" : 60
 }
 ```
 
@@ -74,6 +75,7 @@ cmake -DLOG_LEVEL=Info ..
 4. `supported-methods` 配置代理服务器支持的认证方法
    * `0` : 不需要认证
    * `2` : 需要用户名/密码认证
+5. `timeout` 配置连接的超时时间（默认为 `10` 分钟，单位为 `s`）
 
 ## docker-compose 部署
 * 在 `docker-compose.yml` 所在目录下执行如下命令即可在后台自动部署服务
@@ -84,14 +86,14 @@ docker-compose up -d
 ## Valgrind 内存检测
 * 检测程序是否存在内存泄漏：`valgrind --leck-check=full ../bin/socks-server`
 ```valgrind
-==9516== HEAP SUMMARY:
-==9516==     in use at exit: 0 bytes in 0 blocks
-==9516==   total heap usage: 546 allocs, 546 frees, 4,461,344 bytes allocated
-==9516== 
-==9516== All heap blocks were freed -- no leaks are possible
-==9516== 
-==9516== For lists of detected and suppressed errors, rerun with: -s
-==9516== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==4706== HEAP SUMMARY:
+==4706==     in use at exit: 0 bytes in 0 blocks
+==4706==   total heap usage: 47,865 allocs, 47,865 frees, 21,989,332 bytes allocated
+==4706== 
+==4706== All heap blocks were freed -- no leaks are possible
+==4706== 
+==4706== For lists of detected and suppressed errors, rerun with: -s
+==4706== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 ```
 
 ## Benchmark 压力测试
@@ -195,4 +197,3 @@ int main() {
 ## TODO
 * 完善功能
 * 改用多线程多 `io_context` 模型, 此模型的性能相比于原来使用的多线程单 `io_context` 来说不需要担心资源竞争的问题, 可以保证一个连接的工作在一个线程内运行
-* 支持为套接字连接设置超时时间, 淘汰不活跃的连接

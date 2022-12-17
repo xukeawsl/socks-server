@@ -8,6 +8,7 @@ ServerParser::ServerParser()
     : host("127.0.0.1"),
       port(1080),
       thread_num(std::thread::hardware_concurrency()),
+      conn_timeout(10 * 60),
       log_file("logs/server.log"),
       max_rotate_size(1024 * 1024),
       max_rotate_count(10) {}
@@ -61,6 +62,11 @@ bool ServerParser::parse_config_file(const std::string& config_file) {
         }
     } else {    // 支持方法必填
         return false;
+    }
+
+    auto timeout_config = data["timeout"];
+    if (timeout_config.is_number_unsigned()) {
+        conn_timeout = timeout_config.get<size_t>();
     }
 
     return true;
