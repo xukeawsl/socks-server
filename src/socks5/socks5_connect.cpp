@@ -10,10 +10,7 @@ asio::ip::tcp::socket& Socks5Connection::get_socket() { return this->socket; }
 void Socks5Connection::start() {
     if (socket.is_open()) {
         try {
-            SPDLOG_DEBUG("New Connection {}:{}",
-                         socket.remote_endpoint().address().to_string(),
-                         socket.remote_endpoint().port());
-            uint8_t addr[4];
+            uint8_t addr[4] = {0};
             std::sscanf(socket.remote_endpoint().address().to_string().c_str(),
                         "%hhu.%hhu.%hhu.%hhu", &addr[0], &addr[1], &addr[2],
                         &addr[3]);
@@ -23,12 +20,19 @@ void Socks5Connection::start() {
             local_host = socket.local_endpoint().address().to_string();
             local_port = socket.local_endpoint().port();
 
+            SPDLOG_DEBUG("New Connection {}.{}.{}.{}:{}",
+                         static_cast<int16_t>(this->cli_addr[0]),
+                         static_cast<int16_t>(this->cli_addr[1]),
+                         static_cast<int16_t>(this->cli_addr[2]),
+                         static_cast<int16_t>(this->cli_addr[3]),
+                         this->cli_port);
+
             this->check_deadline();
             this->keep_alive();
             this->get_version_and_nmethods();
         } catch (const asio::system_error&) {
             SPDLOG_DEBUG("Client Disconnected");
-            stop();
+            this->stop();
         }
     }
 }
@@ -37,7 +41,7 @@ void Socks5Connection::set_timeout(size_t second) { this->timeout = second; }
 
 void Socks5Connection::keep_alive() {
     if (timeout > 0) {
-        SPDLOG_TRACE("Keep Alive");
+        SPDLOG_TRACE("Connection Keep Alive");
         deadline.expires_after(asio::chrono::seconds(timeout));
     }
 }
@@ -48,8 +52,12 @@ void Socks5Connection::check_deadline() {
     }
 
     if (deadline.expiry() <= asio::steady_timer::clock_type::now()) {
-        SPDLOG_DEBUG("Timeout");
-        stop();
+        SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Timeout",
+                     static_cast<int16_t>(this->cli_addr[0]),
+                     static_cast<int16_t>(this->cli_addr[1]),
+                     static_cast<int16_t>(this->cli_addr[2]),
+                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port);
+        this->stop();
     } else {
         auto self = shared_from_this();
         deadline.async_wait(std::bind(&Socks5Connection::check_deadline, self));
@@ -68,7 +76,8 @@ void Socks5Connection::get_version_and_nmethods() {
         {asio::buffer(&ver, 1), asio::buffer(&nmethods, 1)}};
     auto self = shared_from_this();
     asio::async_read(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [VER = "
@@ -84,7 +93,7 @@ void Socks5Connection::get_version_and_nmethods() {
 
                 if (this->ver != SocksVersion::V5) {
                     SPDLOG_DEBUG("Unsupported protocol version");
-                    stop();
+                    this->stop();
                 }
 
                 this->methods.resize(this->nmethods);
@@ -96,7 +105,7 @@ void Socks5Connection::get_version_and_nmethods() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -105,7 +114,7 @@ void Socks5Connection::get_methods_list() {
     auto self = shared_from_this();
     asio::async_read(
         socket, asio::buffer(this->methods.data(), this->methods.size()),
-        [this, self](asio::error_code ec, size_t length) {
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [METHODS "
@@ -116,9 +125,9 @@ void Socks5Connection::get_methods_list() {
                     static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
                     this->local_host, this->local_port,
                     spdlog::to_hex(this->methods.begin(), this->methods.end()));
-                this->method = this->choose_method();
 
                 this->keep_alive();
+                this->method = this->choose_method();
                 this->reply_support_method();
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
@@ -127,7 +136,7 @@ void Socks5Connection::get_methods_list() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -147,7 +156,8 @@ void Socks5Connection::reply_support_method() {
 
     auto self = shared_from_this();
     asio::async_write(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
@@ -176,6 +186,7 @@ void Socks5Connection::reply_support_method() {
                         break;
 
                     case SocksV5::Method::NoAcceptable:
+                        this->stop();
                         break;
                 }
 
@@ -186,7 +197,7 @@ void Socks5Connection::reply_support_method() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -194,9 +205,11 @@ void Socks5Connection::reply_support_method() {
 void Socks5Connection::get_username_length() {
     std::array<asio::mutable_buffer, 2> buf = {
         {asio::buffer(&ver, 1), asio::buffer(&ulen, 1)}};
+
     auto self = shared_from_this();
     asio::async_read(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [VER = "
@@ -219,7 +232,7 @@ void Socks5Connection::get_username_length() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -228,7 +241,7 @@ void Socks5Connection::get_username_content() {
     auto self = shared_from_this();
     asio::async_read(
         socket, asio::buffer(this->uname.data(), this->uname.size()),
-        [this, self](asio::error_code ec, size_t length) {
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [UNAME = {}]",
@@ -247,16 +260,18 @@ void Socks5Connection::get_username_content() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
 
 void Socks5Connection::get_password_length() {
     std::array<asio::mutable_buffer, 1> buf = {{asio::buffer(&plen, 1)}};
+
     auto self = shared_from_this();
     asio::async_read(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [PLEN = {}]",
@@ -276,7 +291,7 @@ void Socks5Connection::get_password_length() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -285,7 +300,7 @@ void Socks5Connection::get_password_content() {
     auto self = shared_from_this();
     asio::async_read(
         socket, asio::buffer(this->passwd.data(), this->passwd.size()),
-        [this, self](asio::error_code ec, size_t length) {
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [PASSWD = {}]",
@@ -296,6 +311,7 @@ void Socks5Connection::get_password_content() {
                     this->local_host, this->local_port,
                     std::string(this->passwd.begin(), this->passwd.end()));
 
+                this->keep_alive();
                 this->auth_and_respond();
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
@@ -304,7 +320,7 @@ void Socks5Connection::get_password_content() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -324,7 +340,8 @@ void Socks5Connection::auth_and_respond() {
 
     auto self = shared_from_this();
     asio::async_write(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
@@ -340,6 +357,8 @@ void Socks5Connection::auth_and_respond() {
 
                 if (this->status == SocksV5::ReplyAuthStatus::Success) {
                     this->get_socks_request();
+                } else {
+                    this->stop();
                 }
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
@@ -348,7 +367,7 @@ void Socks5Connection::auth_and_respond() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -357,9 +376,11 @@ void Socks5Connection::get_socks_request() {
     std::array<asio::mutable_buffer, 4> buf = {
         {asio::buffer(&ver, 1), asio::buffer(&cmd, 1), asio::buffer(&rsv, 1),
          asio::buffer(&request_atyp, 1)}};
+
     auto self = shared_from_this();
     asio::async_read(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : [VER = "
@@ -384,13 +405,14 @@ void Socks5Connection::get_socks_request() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
 
 void Socks5Connection::get_dst_information() {
-    reply_atyp = SocksV5::ReplyATYP::Ipv4;    // reply 只支持 ipv4
+    reply_atyp = SocksV5::ReplyATYP::Ipv4;    // reply only supported ipv4
+
     if (request_atyp == SocksV5::RequestATYP::Ipv4) {
         dst_addr.resize(4);
         parse_ipv4();
@@ -409,9 +431,10 @@ void Socks5Connection::parse_ipv4() {
          asio::buffer(&dst_port, 2)}};
     auto self = shared_from_this();
     asio::async_read(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
-                // 网络字节序转主机字节序
+                // network octet order convert to host octet order
                 this->dst_port = ntohs(this->dst_port);
 
                 SPDLOG_DEBUG(
@@ -428,7 +451,7 @@ void Socks5Connection::parse_ipv4() {
                     static_cast<int16_t>(this->dst_addr[3]), this->dst_port);
 
                 this->keep_alive();
-                this->connect_dst_host();
+                this->execute_command();
             } else {
                 SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
                              static_cast<int16_t>(this->cli_addr[0]),
@@ -436,7 +459,7 @@ void Socks5Connection::parse_ipv4() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -447,9 +470,10 @@ void Socks5Connection::parse_ipv6() {
          asio::buffer(&dst_port, 2)}};
     auto self = shared_from_this();
     asio::async_read(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
-                // 网络字节序转主机字节序
+                // network octet order convert to host octet order
                 this->dst_port = ntohs(this->dst_port);
                 std::string ipv6_host = To16(this->dst_addr);
 
@@ -462,8 +486,7 @@ void Socks5Connection::parse_ipv6() {
 
                     std::string host =
                         endpoints->endpoint().address().to_string();
-                    uint8_t addr[4];
-                    memset(addr, 0, sizeof(addr));
+                    uint8_t addr[4] = {0};
                     std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
                                 &addr[1], &addr[2], &addr[3]);
 
@@ -478,7 +501,7 @@ void Socks5Connection::parse_ipv6() {
                         this->local_host, this->local_port, ipv6_host,
                         this->dst_port);
                     this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
-                    this->connect_dst_host();
+                    this->execute_command();
                 } catch (const asio::system_error&) {
                     SPDLOG_WARN("IPv6: {} Resolve Failed", ipv6_host);
                     this->rep = SocksV5::ReplyREP::HostUnreachable;
@@ -493,7 +516,7 @@ void Socks5Connection::parse_ipv6() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -505,7 +528,8 @@ void Socks5Connection::parse_domain_length() {
         asio::buffer(dst_addr.data(), 1)};
     auto self = shared_from_this();
     asio::async_read(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Client {}.{}.{}.{}:{} -> Proxy {}:{} DATA : "
@@ -524,7 +548,7 @@ void Socks5Connection::parse_domain_length() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -545,7 +569,7 @@ void Socks5Connection::parse_domain_content(size_t read_length) {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -554,7 +578,8 @@ void Socks5Connection::parse_port() {
     std::array<asio::mutable_buffer, 1> buf = {asio::buffer(&dst_port, 2)};
     auto self = shared_from_this();
     asio::async_read(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 // 网络字节序转主机字节序
                 this->dst_port = ntohs(this->dst_port);
@@ -592,7 +617,7 @@ void Socks5Connection::parse_port() {
                         static_cast<int16_t>(addr[3]), this->dst_port);
 
                     this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
-                    this->connect_dst_host();
+                    this->execute_command();
                 } catch (const asio::system_error&) {
                     SPDLOG_WARN("DOMAIN_CONTENT: {} Resolve Failed", domain);
                     this->rep = SocksV5::ReplyREP::HostUnreachable;
@@ -607,9 +632,27 @@ void Socks5Connection::parse_port() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
+}
+
+void Socks5Connection::execute_command() {
+    switch (cmd) {
+        case SocksV5::RequestCMD::Connect:
+            connect_dst_host();
+            break;
+        case SocksV5::RequestCMD::Bind:
+            /*not supported*/
+            this->stop();
+            break;
+        case SocksV5::RequestCMD::UdpAssociate:
+            reply_udp_associate();
+            break;
+        default:
+            this->stop();
+            break;
+    }
 }
 
 void Socks5Connection::connect_dst_host() {
@@ -620,7 +663,6 @@ void Socks5Connection::connect_dst_host() {
         asio::ip::tcp::endpoint(asio::ip::address::from_string(host), dst_port),
         [this, self](asio::error_code ec) {
             if (!ec) {
-                // 连接成功
                 this->rep = SocksV5::ReplyREP::Succeeded;
 
                 std::string host;
@@ -628,11 +670,11 @@ void Socks5Connection::connect_dst_host() {
                     this->bnd_port = this->dst_socket.local_endpoint().port();
                     host =
                         this->dst_socket.local_endpoint().address().to_string();
-                } catch (asio::system_error& ec) {
-                    stop();
+                } catch (const asio::system_error&) {
+                    this->stop();
                 }
-                uint8_t addr[4];
-                memset(addr, 0, sizeof(addr));
+
+                uint8_t addr[4] = {0};
                 std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
                             &addr[1], &addr[2], &addr[3]);
                 this->bnd_addr = {addr[0], addr[1], addr[2], addr[3]};
@@ -654,7 +696,329 @@ void Socks5Connection::connect_dst_host() {
                              static_cast<int16_t>(this->dst_addr[2]),
                              static_cast<int16_t>(this->dst_addr[3]),
                              this->dst_port);
-                stop();
+                this->stop();
+            }
+        });
+}
+
+void Socks5Connection::reply_udp_associate() {
+    try {
+        udp_socket.reset(new asio::ip::udp::socket(
+            ioc, asio::ip::udp::endpoint(asio::ip::udp::v4(), 0)));
+
+        uint8_t addr[4] = {0};
+        std::sscanf(udp_socket->local_endpoint().address().to_string().c_str(),
+                    "%hhu.%hhu.%hhu.%hhu", &addr[0], &addr[1], &addr[2],
+                    &addr[3]);
+        bnd_addr = {addr[0], addr[1], addr[2], addr[3]};
+        // host octet order convert to network octet order
+        bnd_port = htons(udp_socket->local_endpoint().port());
+
+        SPDLOG_DEBUG("Udp Associate Socket Listen on: {}.{}.{}.{}:{}",
+                     bnd_addr[0], bnd_addr[1], bnd_addr[2], bnd_addr[3],
+                     ntohs(bnd_port));
+    } catch (const asio::system_error&) {
+        SPDLOG_WARN("Udp Associate Failed");
+    }
+
+    rep = SocksV5::ReplyREP::Succeeded;
+    reply_atyp = SocksV5::ReplyATYP::Ipv4;
+
+    std::array<asio::mutable_buffer, 6> buf = {
+        {asio::buffer(&ver, 1), asio::buffer(&rep, 1), asio::buffer(&rsv, 1),
+         asio::buffer(&reply_atyp, 1), asio::buffer(bnd_addr.data(), 4),
+         asio::buffer(&bnd_port, 2)}};
+
+    auto self = shared_from_this();
+    asio::async_write(
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
+            if (!ec) {
+                // recovery from networks octet order after send to client
+                this->bnd_port = ntohs(this->bnd_port);
+
+                SPDLOG_DEBUG(
+                    "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
+                    "X'{:02x}', REP "
+                    "= X'{:02x}', RSV = X'{:02x}' "
+                    "ATYP = X'{:02x}', BND.ADDR = {}.{}.{}.{}, BND.PORT = {}]",
+                    this->local_host, this->local_port,
+                    static_cast<int16_t>(this->cli_addr[0]),
+                    static_cast<int16_t>(this->cli_addr[1]),
+                    static_cast<int16_t>(this->cli_addr[2]),
+                    static_cast<int16_t>(this->cli_addr[3]), this->cli_port,
+                    static_cast<int16_t>(this->ver),
+                    static_cast<int16_t>(this->rep),
+                    static_cast<int16_t>(this->rsv),
+                    static_cast<int16_t>(this->reply_atyp),
+                    static_cast<int16_t>(this->bnd_addr[0]),
+                    static_cast<int16_t>(this->bnd_addr[1]),
+                    static_cast<int16_t>(this->bnd_addr[2]),
+                    static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port);
+                // prepare buffer
+                this->client_buffer.resize(BUFSIZ);
+
+                this->keep_alive();
+                this->get_udp_client();
+            } else {
+                SPDLOG_DEBUG("Client {}.{}.{}.{}:{} Closed",
+                             static_cast<int16_t>(this->cli_addr[0]),
+                             static_cast<int16_t>(this->cli_addr[1]),
+                             static_cast<int16_t>(this->cli_addr[2]),
+                             static_cast<int16_t>(this->cli_addr[3]),
+                             this->cli_port);
+                this->stop();
+            }
+        });
+}
+
+bool Socks5Connection::check_all_zeros() {
+    if (this->dst_addr.size() != 4 || this->dst_port != 0) {
+        return false;
+    }
+
+    for (auto d : dst_addr) {
+        if (d != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Socks5Connection::set_client_endpoint() {
+    char ipv4[16] = {'\0'};
+    std::snprintf(ipv4, sizeof(ipv4), "%d.%d.%d.%d", dst_addr[0], dst_addr[1],
+                  dst_addr[2], dst_addr[3]);
+    if (std::strcmp(ipv4, "0.0.0.0") == 0) {
+        std::strcpy(ipv4, "127.0.0.1");
+    }
+    client_endpoint =
+        asio::ip::udp::endpoint(asio::ip::make_address(ipv4), dst_port);
+}
+
+void Socks5Connection::set_destination_endpoint() {
+    char ipv4[16] = {'\0'};
+    std::snprintf(ipv4, sizeof(ipv4), "%d.%d.%d.%d", dst_addr[0], dst_addr[1],
+                  dst_addr[2], dst_addr[3]);
+    dst_endpoint =
+        asio::ip::udp::endpoint(asio::ip::make_address(ipv4), dst_port);
+}
+
+void Socks5Connection::get_udp_client() {
+    auto self = shared_from_this();
+    udp_socket->async_receive_from(
+        asio::buffer(client_buffer.data(), client_buffer.size()),
+        sender_endpoint, [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                this->udp_length = length;
+                SPDLOG_DEBUG(
+                    "UDP Client {}:{} -> Proxy {}.{}.{}.{}:{} Data Length = {}",
+                    this->sender_endpoint.address().to_string(),
+                    this->sender_endpoint.port(),
+                    static_cast<int16_t>(this->bnd_addr[0]),
+                    static_cast<int16_t>(this->bnd_addr[1]),
+                    static_cast<int16_t>(this->bnd_addr[2]),
+                    static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port,
+                    this->udp_length);
+
+                if (this->check_all_zeros()) {
+                    this->client_endpoint = this->sender_endpoint;
+                } else {
+                    this->set_client_endpoint();
+                }
+
+                this->keep_alive();
+                this->send_udp_to_dst();
+            } else {
+                SPDLOG_DEBUG("Failed to receive UDP message from client");
+                this->stop();
+            }
+        });
+}
+
+void Socks5Connection::receive_udp_message() {
+    auto self = shared_from_this();
+    udp_socket->async_receive_from(
+        asio::buffer(client_buffer.data(), client_buffer.size()),
+        sender_endpoint, [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                this->keep_alive();
+                this->udp_length = length;
+
+                if (this->sender_endpoint == this->client_endpoint) {
+                    SPDLOG_TRACE(
+                        "UDP Client {}.{} -> Proxy {}.{}.{}.{}:{} Data Length "
+                        "= {}",
+                        this->client_endpoint.address().to_string(),
+                        this->client_endpoint.port(),
+                        static_cast<int16_t>(this->bnd_addr[0]),
+                        static_cast<int16_t>(this->bnd_addr[1]),
+                        static_cast<int16_t>(this->bnd_addr[2]),
+                        static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port,
+                        length);
+
+                    this->send_udp_to_dst();
+                } else if (this->sender_endpoint == this->dst_endpoint) {
+                    SPDLOG_TRACE(
+                        "UDP Server {}.{} -> Proxy {}.{}.{}.{}:{} Data Length "
+                        "= {}",
+                        this->dst_endpoint.address().to_string(),
+                        this->dst_endpoint.port(),
+                        static_cast<int16_t>(this->bnd_addr[0]),
+                        static_cast<int16_t>(this->bnd_addr[1]),
+                        static_cast<int16_t>(this->bnd_addr[2]),
+                        static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port,
+                        length);
+
+                    this->send_udp_to_client();
+                } else {
+                    // unkown vistor (ignore)
+                    this->receive_udp_message();
+                }
+            } else {
+                SPDLOG_DEBUG("Failed to receive UDP message");
+                this->stop();
+            }
+        });
+}
+
+void Socks5Connection::send_udp_to_dst() {
+    if (udp_length <= 4) {
+        SPDLOG_WARN("Udp Associate Header Length Error");
+        this->stop();
+        return;
+    }
+
+    std::memcpy(&this->udp_rsv, this->client_buffer.data(),
+                sizeof(this->udp_rsv));
+    this->udp_rsv = ntohs(this->udp_rsv);
+    if (this->udp_rsv != 0x0000) {
+        SPDLOG_WARN("Udp Associate RSV Not Zero");
+        this->stop();
+        return;
+    }
+
+    std::memcpy(&this->frag, this->client_buffer.data() + 2,
+                sizeof(this->frag));
+    if (this->frag != 0) {
+        SPDLOG_WARN("Udp Associate Not Support Splice Process");
+        this->stop();
+        return;
+    }
+
+    std::memcpy(&this->reply_atyp, this->client_buffer.data() + 3,
+                sizeof(this->reply_atyp));
+
+    switch (this->reply_atyp) {
+        case SocksV5::ReplyATYP::Ipv4:
+            if (this->udp_length <= 10) {
+                SPDLOG_WARN("Udp Associate Ipv4 Length Error");
+                this->stop();
+                return;
+            }
+            std::memcpy(this->dst_addr.data(), this->client_buffer.data() + 4,
+                        4);
+            std::memcpy(&this->dst_port, this->client_buffer.data() + 8,
+                        sizeof(this->dst_port));
+            this->dst_port = ntohs(this->dst_port);
+
+            this->udp_length -= 10;
+            std::memmove(this->client_buffer.data(),
+                         this->client_buffer.data() + 10, this->udp_length);
+
+            break;
+
+        case SocksV5::ReplyATYP::Ipv6:
+
+            break;
+
+        case SocksV5::ReplyATYP::DoMainName:
+
+            break;
+
+        default:
+            this->stop();
+            return;
+    }
+
+    this->set_destination_endpoint();
+
+    auto self = shared_from_this();
+    udp_socket->async_send_to(
+        asio::buffer(this->client_buffer.data(), this->udp_length),
+        dst_endpoint, [this, self](asio::error_code ec, size_t length) {
+            if (!ec) {
+                SPDLOG_TRACE(
+                    "Proxy {}.{}.{}.{}:{} -> UDP Server {}:{} Data Length "
+                    "= {}",
+                    static_cast<int16_t>(this->bnd_addr[0]),
+                    static_cast<int16_t>(this->bnd_addr[1]),
+                    static_cast<int16_t>(this->bnd_addr[2]),
+                    static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port,
+                    this->dst_endpoint.address().to_string(),
+                    this->dst_endpoint.port(), length);
+
+                this->keep_alive();
+                this->receive_udp_message();
+            } else {
+                SPDLOG_WARN("Failed to send message to UDP Server {}:{}",
+                            this->dst_endpoint.address().to_string(),
+                            this->dst_endpoint.port());
+                this->stop();
+            }
+        });
+}
+
+void Socks5Connection::send_udp_to_client() {
+    if (this->udp_length + 10 > this->client_buffer.size()) {
+        this->client_buffer.resize(2 * this->client_buffer.size());
+    }
+
+    // move data to back
+    std::memmove(this->client_buffer.data() + 10, this->client_buffer.data(),
+                 this->udp_length);
+
+    this->reply_atyp = SocksV5::ReplyATYP::Ipv4;
+
+    // add UDP request header
+    std::memcpy(this->client_buffer.data(), &this->udp_rsv,
+                sizeof(this->udp_rsv));
+    std::memcpy(this->client_buffer.data() + 2, &this->frag,
+                sizeof(this->frag));
+    std::memcpy(this->client_buffer.data() + 3, &this->reply_atyp,
+                sizeof(this->reply_atyp));
+    std::memcpy(this->client_buffer.data() + 4, this->dst_addr.data(), 4);
+    this->dst_port = htons(this->dst_port);
+    std::memcpy(this->client_buffer.data() + 8, &this->dst_port,
+                sizeof(this->dst_port));
+
+    // add header length
+    this->udp_length += 10;
+
+    auto self = shared_from_this();
+    udp_socket->async_send_to(
+        asio::buffer(this->client_buffer.data(), this->udp_length),
+        client_endpoint,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
+            if (!ec) {
+                SPDLOG_TRACE(
+                    "Proxy {}.{}.{}.{}:{} -> UDP Client {}:{} Data Length "
+                    "= {}",
+                    static_cast<int16_t>(this->bnd_addr[0]),
+                    static_cast<int16_t>(this->bnd_addr[1]),
+                    static_cast<int16_t>(this->bnd_addr[2]),
+                    static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port,
+                    this->client_endpoint.address().to_string(),
+                    this->client_endpoint.port(), this->udp_length);
+
+                this->keep_alive();
+                this->receive_udp_message();
+            } else {
+                SPDLOG_WARN("Failed to send message to UDP Client {}:{}",
+                            this->client_endpoint.address().to_string(),
+                            this->client_endpoint.port());
+                this->stop();
             }
         });
 }
@@ -667,7 +1031,8 @@ void Socks5Connection::reply_connect_result() {
 
     auto self = shared_from_this();
     asio::async_write(
-        socket, buf, [this, self](asio::error_code ec, size_t length) {
+        socket, buf,
+        [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
                 SPDLOG_DEBUG(
                     "Proxy {}:{} -> Client {}.{}.{}.{}:{} DATA : [VER = "
@@ -686,13 +1051,13 @@ void Socks5Connection::reply_connect_result() {
                     static_cast<int16_t>(this->bnd_addr[0]),
                     static_cast<int16_t>(this->bnd_addr[1]),
                     static_cast<int16_t>(this->bnd_addr[2]),
-                    static_cast<int16_t>(this->bnd_addr[3]), this->dst_port);
-                // 准备缓冲区
+                    static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port);
+                // prepare buffer
                 this->client_buffer.resize(BUFSIZ);
                 this->dst_buffer.resize(BUFSIZ);
 
                 this->keep_alive();
-                // 准备两个方向的异步任务
+                // add two async task
                 this->read_from_client();
                 this->read_from_dst();
             } else {
@@ -702,7 +1067,7 @@ void Socks5Connection::reply_connect_result() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -730,7 +1095,7 @@ void Socks5Connection::read_from_client() {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -747,7 +1112,7 @@ void Socks5Connection::send_to_dst(size_t write_length) {
                     static_cast<int16_t>(this->bnd_addr[0]),
                     static_cast<int16_t>(this->bnd_addr[1]),
                     static_cast<int16_t>(this->bnd_addr[2]),
-                    static_cast<int16_t>(this->bnd_addr[3]), this->dst_port,
+                    static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port,
                     static_cast<int16_t>(this->dst_addr[0]),
                     static_cast<int16_t>(this->dst_addr[1]),
                     static_cast<int16_t>(this->dst_addr[2]),
@@ -763,7 +1128,7 @@ void Socks5Connection::send_to_dst(size_t write_length) {
                              static_cast<int16_t>(this->dst_addr[2]),
                              static_cast<int16_t>(this->dst_addr[3]),
                              this->dst_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -784,7 +1149,7 @@ void Socks5Connection::read_from_dst() {
                     static_cast<int16_t>(this->bnd_addr[0]),
                     static_cast<int16_t>(this->bnd_addr[1]),
                     static_cast<int16_t>(this->bnd_addr[2]),
-                    static_cast<int16_t>(this->bnd_addr[3]), this->dst_port,
+                    static_cast<int16_t>(this->bnd_addr[3]), this->bnd_port,
                     length);
 
                 this->keep_alive();
@@ -796,7 +1161,7 @@ void Socks5Connection::read_from_dst() {
                              static_cast<int16_t>(this->dst_addr[2]),
                              static_cast<int16_t>(this->dst_addr[3]),
                              this->dst_port);
-                stop();
+                this->stop();
             }
         });
 }
@@ -825,26 +1190,27 @@ void Socks5Connection::send_to_client(size_t write_length) {
                              static_cast<int16_t>(this->cli_addr[2]),
                              static_cast<int16_t>(this->cli_addr[3]),
                              this->cli_port);
-                stop();
+                this->stop();
             }
         });
 }
 
 std::string Socks5Connection::To16(const std::vector<uint8_t>& ipv6_addr) {
     char ipv6[40] = {'\0'};
-    snprintf(ipv6, sizeof(ipv6),
-             "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%"
-             "02x%02x",
-             ipv6_addr[0], ipv6_addr[1], ipv6_addr[2], ipv6_addr[3],
-             ipv6_addr[4], ipv6_addr[5], ipv6_addr[6], ipv6_addr[7],
-             ipv6_addr[8], ipv6_addr[9], ipv6_addr[10], ipv6_addr[11],
-             ipv6_addr[12], ipv6_addr[13], ipv6_addr[14], ipv6_addr[15]);
+    std::snprintf(
+        ipv6, sizeof(ipv6),
+        "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%"
+        "02x%02x",
+        ipv6_addr[0], ipv6_addr[1], ipv6_addr[2], ipv6_addr[3], ipv6_addr[4],
+        ipv6_addr[5], ipv6_addr[6], ipv6_addr[7], ipv6_addr[8], ipv6_addr[9],
+        ipv6_addr[10], ipv6_addr[11], ipv6_addr[12], ipv6_addr[13],
+        ipv6_addr[14], ipv6_addr[15]);
     return std::string(ipv6);
 }
 
 std::string Socks5Connection::To4(const std::vector<uint8_t>& ipv4_addr) {
     char ipv4[16] = {'\0'};
-    snprintf(ipv4, sizeof(ipv4), "%d.%d.%d.%d", ipv4_addr[0], ipv4_addr[1],
-             ipv4_addr[2], ipv4_addr[3]);
+    std::snprintf(ipv4, sizeof(ipv4), "%d.%d.%d.%d", ipv4_addr[0], ipv4_addr[1],
+                  ipv4_addr[2], ipv4_addr[3]);
     return std::string(ipv4);
 }

@@ -6,6 +6,12 @@
 [![Release](https://img.shields.io/github/v/release/xukeawsl/socks-server?color=red)](https://github.com/xukeawsl/socks-server/releases)
 [![RepoSize](https://img.shields.io/github/repo-size/xukeawsl/socks-server?color=yellow)](https://img.shields.io/github/repo-size/xukeawsl/socks-server?color=yellow)
 
+## 特性
+* 无认证模式
+* 用户名/密码认证模式
+* 支持 `CONNECTION` 和 `UDP ASSOCIATE` 命令
+* 支持通过 `IPV4(6)/域名` 访问远程机器
+
 ## 使用
 * 下载仓库并创建构建目录
 ```bash
@@ -195,5 +201,5 @@ int main() {
 * [RFC1929 : Username/Password Authentication for SOCKS V5](https://www.rfc-editor.org/rfc/rfc1929.html)
 
 ## TODO
-* 完善功能
-* 改用多线程多 `io_context` 模型, 此模型的性能相比于原来使用的多线程单 `io_context` 来说不需要担心资源竞争的问题, 可以保证一个连接的工作在一个线程内运行
+* `UDP ASSOCIATE` 支持通提供过 `ipv6/域名` 访问远程机器
+* 支持 `BIND` 命令

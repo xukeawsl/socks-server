@@ -118,7 +118,50 @@ private:
 
     void parse_port();
 
+    void execute_command();
+
     void connect_dst_host();
+
+    //  The UDP ASSOCIATE request is used to establish an association within
+    //  the UDP relay process to handle UDP datagrams. The DST.ADDR and
+    //  DST.PORT fields contain the address and port that the client expects
+    //  to use to send UDP datagrams on for the association. The server MAY
+    //  use this information to limit access to the association. If the
+    //  client is not in possesion of the information at the time of the UDP
+    //  ASSOCIATE, the client MUST use a port number and address of all
+    //  zeros.
+    bool check_all_zeros();
+
+    void set_client_endpoint();
+
+    void set_destination_endpoint();
+
+    //  In the reply to a UDP ASSOCIATE request, the BND.PORT and BND.ADDR
+    //  fields indicate the port number/address where the client MUST send
+    //  UDP request messages to be relayed.
+    void reply_udp_associate();
+
+    //  +----+------+------+----------+----------+----------+
+    //  |RSV | FRAG | ATYP | DST.ADDR | DST.PORT | DATA |
+    //  +----+------+------+----------+----------+----------+
+    //  | 2 | 1 | 1 | Variable | 2 | Variable |
+    //  +----+------+------+----------+----------+----------+
+    // (1) RSV Reserved X’0000’
+    // (2) FRAG Current fragment number
+    // (3) ATYP address type of following address
+    //      (3.1) IP V4 address: X’01’
+    //      (3.2) DOMAINNAME: X’03’
+    //      (3.3) IP V6 address: X’04’
+    // (4) DST.ADDR desired destination address
+    // (5) DST.PORT desired destination port
+    // (6) DATA user data
+    void get_udp_client();
+
+    void receive_udp_message();
+
+    void send_udp_to_dst();
+
+    void send_udp_to_client();
 
     //  +----+-----+-------+------+----------+----------+
     //  |VER | REP | RSV   | ATYP | BND.ADDR | BND.PORT |
@@ -193,6 +236,15 @@ protected:
     SocksV5::ReplyREP rep;
     std::vector<uint8_t> bnd_addr;
     uint16_t bnd_port;
+
+    /* Udp Associate Step */
+    std::unique_ptr<asio::ip::udp::socket> udp_socket;
+    uint16_t udp_rsv;
+    uint8_t frag;
+    asio::ip::udp::endpoint client_endpoint;
+    asio::ip::udp::endpoint dst_endpoint;
+    asio::ip::udp::endpoint sender_endpoint;
+    size_t udp_length;
 
     /* Talk Step */
     std::vector<uint8_t> client_buffer;
