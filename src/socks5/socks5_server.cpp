@@ -26,10 +26,7 @@ Socks5Server::Socks5Server(const std::string& host, uint16_t port,
     wait_for_client();
 }
 
-Socks5Server::~Socks5Server() {
-    stop();
-    spdlog::shutdown();
-}
+Socks5Server::~Socks5Server() {}
 
 void Socks5Server::start() {
     SPDLOG_INFO("Socks Server Start");
@@ -46,9 +43,9 @@ void Socks5Server::start() {
 }
 
 void Socks5Server::stop() {
-    pool.stop();
-
     SPDLOG_INFO("Socks Server Stop");
+    pool.stop();
+    spdlog::shutdown();
 }
 
 void Socks5Server::wait_for_client() {
