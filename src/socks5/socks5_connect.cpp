@@ -1,7 +1,12 @@
 #include "socks5/socks5_connect.h"
 
 Socks5Connection::Socks5Connection(asio::io_context& ioc_)
-    : ioc(ioc_), socket(ioc_), dst_socket(ioc_), deadline(ioc_) {
+    : ioc(ioc_),
+      tcp_resolver(ioc_),
+      udp_resolver(ioc_),
+      socket(ioc_),
+      dst_socket(ioc_),
+      deadline(ioc_) {
     deadline.expires_at(asio::steady_timer::time_point::max());
 }
 
@@ -477,11 +482,9 @@ void Socks5Connection::parse_ipv6() {
                 this->dst_port = ntohs(this->dst_port);
                 std::string ipv6_host = To16(this->dst_addr);
 
-                asio::ip::tcp::resolver resolver(this->ioc);
-
                 this->keep_alive();
                 try {
-                    auto endpoints = resolver.resolve(
+                    auto endpoints = this->tcp_resolver.resolve(
                         ipv6_host, std::to_string(this->dst_port));
 
                     std::string host =
@@ -590,15 +593,15 @@ void Socks5Connection::parse_port() {
                 }
 
                 this->keep_alive();
-                asio::ip::tcp::resolver resolver(this->ioc);
+
                 try {
-                    auto endpoints = resolver.resolve(
+                    auto endpoints = this->tcp_resolver.resolve(
                         domain, std::to_string(this->dst_port));
 
                     std::string host =
                         endpoints->endpoint().address().to_string();
                     uint8_t addr[4];
-                    memset(addr, 0, sizeof(addr));
+                    std::memset(addr, 0, sizeof(addr));
                     std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
                                 &addr[1], &addr[2], &addr[3]);
 
@@ -911,7 +914,7 @@ void Socks5Connection::send_udp_to_dst() {
                 sizeof(this->reply_atyp));
 
     switch (this->reply_atyp) {
-        case SocksV5::ReplyATYP::Ipv4:
+        case SocksV5::ReplyATYP::Ipv4: {
             if (this->udp_length <= 10) {
                 SPDLOG_WARN("Udp Associate Ipv4 Length Error");
                 this->stop();
@@ -926,20 +929,87 @@ void Socks5Connection::send_udp_to_dst() {
             this->udp_length -= 10;
             std::memmove(this->client_buffer.data(),
                          this->client_buffer.data() + 10, this->udp_length);
+        } break;
 
-            break;
+        case SocksV5::ReplyATYP::Ipv6: {
+            if (this->udp_length <= 18) {
+                SPDLOG_WARN("Udp Associate Ipv6 Length Error");
+                this->stop();
+                return;
+            }
+            this->dst_addr.resize(16);
+            std::memcpy(this->dst_addr.data(), this->client_buffer.data() + 4,
+                        16);
+            std::string ipv6_host = To16(this->dst_addr);
+            std::memcpy(&this->dst_port, this->client_buffer.data() + 20,
+                        sizeof(this->dst_port));
+            this->dst_port = ntohs(this->dst_port);
 
-        case SocksV5::ReplyATYP::Ipv6:
+            try {
+                auto endpoints = this->udp_resolver.resolve(
+                    ipv6_host, std::to_string(this->dst_port));
 
-            break;
+                std::string host = endpoints->endpoint().address().to_string();
+                uint8_t addr[4] = {0};
+                std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
+                            &addr[1], &addr[2], &addr[3]);
+                this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
+            } catch (const asio::system_error&) {
+                SPDLOG_WARN("Udp Associate Ipv6: {} Resolve Failed", ipv6_host);
+                this->stop();
+                return;
+            }
 
-        case SocksV5::ReplyATYP::DoMainName:
+            this->udp_length -= 22;
+            std::memmove(this->client_buffer.data(),
+                         this->client_buffer.data() + 22, this->udp_length);
+        } break;
 
-            break;
+        case SocksV5::ReplyATYP::DoMainName: {
+            uint8_t domain_length = this->client_buffer[4];
+            if (this->udp_length <= static_cast<size_t>(domain_length + 7)) {    // 4 + 1 + len + 2
+                SPDLOG_WARN("Udp Associate DoMainName Length Error");
+                this->stop();
+                return;
+            }
+            char domain_content[domain_length];
+            std::memcpy(domain_content, this->client_buffer.data() + 5,
+                        domain_length);
+            std::memcpy(&this->dst_port,
+                        this->client_buffer.data() + 5 + domain_length,
+                        sizeof(this->dst_port));
+            this->dst_port = ntohs(this->dst_port);
+            std::string domain(domain_content);
 
-        default:
+            try {
+                auto endpoints = this->udp_resolver.resolve(
+                    domain, std::to_string(this->dst_port));
+
+                std::string host = endpoints->endpoint().address().to_string();
+                uint8_t addr[4];
+                std::memset(addr, 0, sizeof(addr));
+                std::sscanf(host.c_str(), "%hhu.%hhu.%hhu.%hhu", &addr[0],
+                            &addr[1], &addr[2], &addr[3]);
+
+                this->dst_addr = {addr[0], addr[1], addr[2], addr[3]};
+            } catch (const asio::system_error&) {
+                SPDLOG_WARN("Udp Associate DOMAIN_CONTENT: {} Resolve Failed",
+                            domain);
+                this->stop();
+                return;
+            }
+
+            this->udp_length -= domain_length + 7;
+            std::memmove(this->client_buffer.data(),
+                         this->client_buffer.data() + domain_length + 7,
+                         this->udp_length);
+        } break;
+
+        default: {
+            SPDLOG_WARN("Udp Associate Not Supported ATYP");
             this->stop();
             return;
+        } break;
     }
 
     this->set_destination_endpoint();

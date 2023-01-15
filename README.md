@@ -119,7 +119,7 @@ int main() {
 	});
 
     server.run();
-	return 0;
+    return 0;
 }
 ```
 * 添加本地域名解析 `vim /etc/hosts`
@@ -201,5 +201,7 @@ int main() {
 * [RFC1929 : Username/Password Authentication for SOCKS V5](https://www.rfc-editor.org/rfc/rfc1929.html)
 
 ## TODO
-* `UDP ASSOCIATE` 支持通提供过 `ipv6/域名` 访问远程机器
+### 1. 优化
+* 地址`同步`解析更换为`异步`解析(`resolve` -> `async_resolve`)，需要调整调用链逻辑
+### 2. 功能扩展
 * 支持 `BIND` 命令

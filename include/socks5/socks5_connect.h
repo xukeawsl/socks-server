@@ -198,6 +198,8 @@ private:
 
 protected:
     asio::io_context& ioc;
+    asio::ip::tcp::resolver tcp_resolver;
+    asio::ip::udp::resolver udp_resolver;
     asio::ip::tcp::socket socket;
     asio::ip::tcp::socket dst_socket;
 
