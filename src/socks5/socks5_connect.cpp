@@ -967,7 +967,8 @@ void Socks5Connection::send_udp_to_dst() {
 
         case SocksV5::ReplyATYP::DoMainName: {
             uint8_t domain_length = this->client_buffer[4];
-            if (this->udp_length <= static_cast<size_t>(domain_length + 7)) {    // 4 + 1 + len + 2
+            if (this->udp_length <=
+                static_cast<size_t>(domain_length + 7)) {    // 4 + 1 + len + 2
                 SPDLOG_WARN("Udp Associate DoMainName Length Error");
                 this->stop();
                 return;

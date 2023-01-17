@@ -6,15 +6,16 @@
 
 class Socks5Server : public noncopyable {
 public:
-    explicit Socks5Server(const std::string& host, uint16_t port,
-                          size_t thread_num);
+    Socks5Server(const std::string& host, uint16_t port, size_t thread_num);
 
-    ~Socks5Server();
+    ~Socks5Server() = default;
 
-    void start();
+    void start() noexcept;
 
 private:
-    void wait_for_client();
+    void init();
+
+    void do_accept();
 
     void stop();
 
@@ -24,5 +25,6 @@ protected:
     io_context_pool pool;
     asio::signal_set signals;
     asio::ip::tcp::acceptor acceptor;
+    asio::ip::tcp::endpoint listen_endpoint;
     std::shared_ptr<Socks5Connection> new_conn_ptr;
 };
