@@ -18,7 +18,9 @@ void io_context_pool::run() {
     }
 
     for (size_t i = 0; i < threads.size(); ++i) {
-        threads[i]->join();
+        if (threads[i]->joinable()) {
+            threads[i]->join();
+        }
     }
 }
 

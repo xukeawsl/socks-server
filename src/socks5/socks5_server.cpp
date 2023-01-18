@@ -1,4 +1,5 @@
 #include "socks5/socks5_server.h"
+#include "socks5/socks5_connect.h"
 
 Socks5Server::Socks5Server(const std::string& host, uint16_t port,
                            size_t thread_num)
@@ -32,8 +33,6 @@ void Socks5Server::start() noexcept {
 
 void Socks5Server::stop() {
     SPDLOG_INFO("Socks Server Stop");
-    asio::error_code ignore_ec;
-    signals.cancel(ignore_ec);
     pool.stop();
     spdlog::shutdown();
 }

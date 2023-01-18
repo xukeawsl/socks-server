@@ -1,8 +1,9 @@
 #pragma once
 
 #include "common/common.h"
-#include "socks5_connect.h"
 #include "util/io_context_pool.h"
+
+class Socks5Connection;
 
 class Socks5Server : public noncopyable {
 public:

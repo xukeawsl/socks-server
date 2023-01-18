@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "asio.hpp"
-#include "common/logger.h"
+#include "logger.h"
 
 /* SOCKS Protocol Version Field */
 enum class SocksVersion : uint8_t { V4 = 0x04, V5 = 0x05 };
