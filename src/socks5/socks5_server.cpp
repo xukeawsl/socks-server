@@ -1,5 +1,6 @@
 #include "socks5/socks5_server.h"
-#include "socks5/socks5_connect.h"
+
+#include "socks5/socks5_session.h"
 
 Socks5Server::Socks5Server(const std::string& host, uint16_t port,
                            size_t thread_num)
@@ -15,19 +16,20 @@ void Socks5Server::start() noexcept {
     try {
         init();
 
-        SPDLOG_INFO("Socks Server Start");
-        SPDLOG_INFO("Socks Server Listen on {}:{}",
-                    listen_endpoint.address().to_string(),
-                    listen_endpoint.port());
-        SPDLOG_INFO("Socks Server Work Thread Num : {}", pool_size);
-        SPDLOG_INFO("Socks Server Connection Timeout : {}s", conn_timeout);
+        SPDLOG_INFO("Socks5 Server Start");
+        SPDLOG_INFO("Socks5 Server Listening on {}",
+                    convert::format_address(listen_endpoint));
+        SPDLOG_INFO("Socks5 Server Listening Address Type : {}",
+                    listen_endpoint.address().is_v4() ? "IPv4" : "IPv6");
+        SPDLOG_INFO("Socks5 Server Work Thread Num : {}", pool_size);
+        SPDLOG_INFO("Socks5 Server Connection Timeout : {}s", conn_timeout);
 
         do_accept();
 
         pool.run();
     } catch (const std::exception& e) {
-        SPDLOG_ERROR("Socks Server Failed to Start (error_message={})",
-                     e.what());
+        SPDLOG_ERROR("Socks5 Server Failed to Start : ERR_MSG = [{}])",
+                     std::string(e.what()));
     }
 }
 
@@ -45,17 +47,14 @@ void Socks5Server::init() {
 #endif
     signals.async_wait(std::bind(&Socks5Server::stop, this));
 
-    asio::ip::tcp::resolver resolver(acceptor.get_executor());
-    asio::ip::tcp::endpoint endpoint =
-        *resolver.resolve(listen_endpoint).begin();
-    acceptor.open(endpoint.protocol());
+    acceptor.open(listen_endpoint.protocol());
     acceptor.set_option(asio::ip::tcp::acceptor::reuse_address(true));
-    acceptor.bind(endpoint);
+    acceptor.bind(listen_endpoint);
     acceptor.listen();
 }
 
 void Socks5Server::do_accept() {
-    new_conn_ptr.reset(new Socks5Connection(pool.get_io_context()));
+    new_conn_ptr.reset(new Socks5Session(pool.get_io_context()));
     acceptor.async_accept(
         new_conn_ptr->get_socket(), [this](std::error_code ec) {
             if (!ec) {

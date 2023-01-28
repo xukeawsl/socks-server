@@ -4,15 +4,11 @@
 #include "option/parser.h"
 #include "socks5/socks5_type.h"
 
-class Socks5Connection : public std::enable_shared_from_this<Socks5Connection> {
+class Socks5Session : public std::enable_shared_from_this<Socks5Session> {
 public:
-    explicit Socks5Connection(asio::io_context& ioc_);
+    explicit Socks5Session(asio::io_context& ioc_);
 
-    virtual ~Socks5Connection() {}
-
-    static std::string To16(const std::vector<uint8_t>& ipv6_addr);
-
-    static std::string To4(const std::vector<uint8_t>& ipv4_addr);
+    virtual ~Socks5Session() = default;
 
     asio::ip::tcp::socket& get_socket();
 
@@ -55,6 +51,10 @@ private:
     //  +----+--------+
     void reply_support_method();
 
+    void do_no_auth();
+
+    void do_username_password_auth();
+
     // +----+------+----------+------+----------+
     // |VER | ULEN | UNAME | PLEN | PASSWD |
     // +----+------+----------+------+----------+
@@ -83,7 +83,7 @@ private:
     // (2) STATUS auth result
     //      (2.1) SUCCESS X’00’
     //      (2.2) FAILURE X’01’(STATUS value other than X’00’)
-    void auth_and_respond();
+    void do_auth_and_reply();
 
     //  +----+-----+-------+------+----------+----------+
     //  |VER | CMD | RSV | ATYP | DST.ADDR | DST.PORT   |
@@ -100,27 +100,58 @@ private:
     //      (4.1) IP V4 address: X’01’
     //      (4.2) DOMAINNAME: X’03’
     //      (4.3) IP V6 address: X’04’
-    void get_socks_request();
+    void get_request_from_client();
 
     // (5) DST.ADDR desired destination address
     // (6) DST.PORT desired destination port in network octet order
     void get_dst_information();
 
-    void parse_ipv4();
+    void resolve_ipv4();
 
-    void parse_ipv6();
+    void resolve_ipv6();
 
-    void parse_domain();
+    void resolve_domain();
 
-    void parse_domain_length();
+    void resolve_domain_length();
 
-    void parse_domain_content(size_t read_length);
-
-    void parse_port();
+    void resolve_domain_content();
 
     void execute_command();
 
+    void set_connect_endpoint();
+
+    template <typename InternetProtocol>
+    void set_reply_address(
+        const asio::ip::basic_endpoint<InternetProtocol>& endpoint) {
+        if (endpoint.address().is_v4()) {
+            this->reply_atyp = SocksV5::ReplyATYP::Ipv4;
+            this->bnd_addr.resize(4);
+            auto&& ipv4_array = endpoint.address().to_v4().to_bytes();
+            std::memcpy(this->bnd_addr.data(), ipv4_array.data(), 4);
+        } else {
+            this->reply_atyp = SocksV5::ReplyATYP::Ipv6;
+            this->bnd_addr.resize(16);
+            auto&& ipv6_array = endpoint.address().to_v6().to_bytes();
+            std::memcpy(this->bnd_addr.data(), ipv6_array.data(), 16);
+        }
+
+        this->bnd_port = htons(endpoint.port());
+    }
+
+    void async_dns_reslove();
+
+    void try_to_connect_by_iterator(
+        asio::ip::udp::resolver::results_type::const_iterator iter);
+
     void connect_dst_host();
+
+    void set_udp_associate_endpoint();
+
+    void async_udp_dns_reslove();
+
+    bool check_sender_endpoint();
+
+    bool check_dst_addr_all_zeros();
 
     //  The UDP ASSOCIATE request is used to establish an association within
     //  the UDP relay process to handle UDP datagrams. The DST.ADDR and
@@ -131,10 +162,6 @@ private:
     //  ASSOCIATE, the client MUST use a port number and address of all
     //  zeros.
     bool check_all_zeros();
-
-    void set_client_endpoint();
-
-    void set_destination_endpoint();
 
     //  In the reply to a UDP ASSOCIATE request, the BND.PORT and BND.ADDR
     //  fields indicate the port number/address where the client MUST send
@@ -156,6 +183,13 @@ private:
     // (5) DST.PORT desired destination port
     // (6) DATA user data
     void get_udp_client();
+
+    void async_send_udp_message();
+
+    void try_to_send_by_iterator(
+        asio::ip::udp::resolver::results_type::const_iterator iter);
+
+    void parse_udp_message();
 
     void receive_udp_message();
 
@@ -188,6 +222,8 @@ private:
     // (6) BND.PORT server bound port in network octet order
     void reply_connect_result();
 
+    void reply_and_stop(SocksV5::ReplyREP rep);
+
     void read_from_client();
 
     void send_to_dst(size_t write_length);
@@ -198,16 +234,26 @@ private:
 
 protected:
     asio::io_context& ioc;
-    asio::ip::tcp::resolver tcp_resolver;
+
     asio::ip::udp::resolver udp_resolver;
+    asio::ip::udp::resolver::results_type resolve_results;
+
     asio::ip::tcp::socket socket;
     asio::ip::tcp::socket dst_socket;
 
-    std::string local_host;
-    uint16_t local_port;
+    asio::ip::tcp::endpoint local_endpoint;
 
-    std::vector<uint8_t> cli_addr;
-    uint16_t cli_port;
+    /* Connect */
+    asio::ip::tcp::endpoint tcp_cli_endpoint;
+    asio::ip::tcp::endpoint tcp_dst_endpoint;
+    asio::ip::tcp::endpoint tcp_bnd_endpoint;
+
+    /* Udp Associate */
+    asio::ip::udp::endpoint udp_cli_endpoint;
+    asio::ip::udp::endpoint udp_dst_endpoint;
+    asio::ip::udp::endpoint udp_bnd_endpoint;
+    asio::ip::udp::endpoint sender_endpoint;
+
     SocksVersion ver;
     uint8_t rsv;
 
@@ -219,7 +265,7 @@ protected:
     uint8_t nmethods;
     std::vector<SocksV5::Method> methods;
 
-    /* Auth Step*/
+    /* Username/Password Authentication Step */
     uint8_t ulen;
     uint8_t plen;
     SocksV5::ReplyAuthStatus status;
@@ -243,12 +289,10 @@ protected:
     std::unique_ptr<asio::ip::udp::socket> udp_socket;
     uint16_t udp_rsv;
     uint8_t frag;
-    asio::ip::udp::endpoint client_endpoint;
-    asio::ip::udp::endpoint dst_endpoint;
-    asio::ip::udp::endpoint sender_endpoint;
+
     size_t udp_length;
 
-    /* Talk Step */
+    /* Common Buffer */
     std::vector<uint8_t> client_buffer;
     std::vector<uint8_t> dst_buffer;
 };

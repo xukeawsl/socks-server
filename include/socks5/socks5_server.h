@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "util/io_context_pool.h"
 
-class Socks5Connection;
+class Socks5Session;
 
 class Socks5Server : public noncopyable {
 public:
@@ -27,5 +27,5 @@ protected:
     asio::signal_set signals;
     asio::ip::tcp::acceptor acceptor;
     asio::ip::tcp::endpoint listen_endpoint;
-    std::shared_ptr<Socks5Connection> new_conn_ptr;
+    std::shared_ptr<Socks5Session> new_conn_ptr;
 };
