@@ -4,7 +4,7 @@ namespace convert {
 
 std::string dst_to_string(const std::vector<uint8_t>& dst_addr,
                           ATyp addr_type) {
-    static char addr[UINT8_MAX];
+    char addr[UINT8_MAX];
     std::memset(addr, 0, sizeof(addr));
 
     switch (addr_type) {

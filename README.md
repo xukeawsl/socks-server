@@ -201,7 +201,5 @@ int main() {
 * [RFC1929 : Username/Password Authentication for SOCKS V5](https://www.rfc-editor.org/rfc/rfc1929.html)
 
 ## TODO
-### 1. 优化
-* 地址`同步`解析更换为`异步`解析(`resolve` -> `async_resolve`)，需要调整调用链逻辑
-### 2. 功能扩展
+### 1. 功能扩展
 * 支持 `BIND` 命令
