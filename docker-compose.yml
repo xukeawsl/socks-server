@@ -5,7 +5,7 @@ networks:
 
 services:
   socks5-service:
-    image: xukeawsl/socks5-server:v3.3
+    image: xukeawsl/socks5-server:v4.0
     container_name: socks5-server
     ports:
       - 1080:1080
@@ -16,4 +16,9 @@ services:
     environment:
       - TZ=Asia/Shanghai
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     privileged: true
