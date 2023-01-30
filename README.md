@@ -12,6 +12,11 @@
 * 支持 `CONNECTION` 和 `UDP ASSOCIATE` 命令
 * 支持通过 `IPV4(6)/域名` 访问远程机器
 
+## 优点
+* **高性能**，采用多线程 + 异步 IO 模型
+* **可靠性强**，良好的异常处理，无内存泄漏，日志详细
+* **代码结构清晰**，可读性强
+
 ## 使用
 * 下载仓库并创建构建目录
 ```bash
@@ -65,14 +70,14 @@ cmake -DLOG_LEVEL=Info ..
 ```
 
 1. `server` 配置服务器相关参数
-   * `host` ：监听的 ip 地址（默认 `127.0.0.1` ）
+   * `host` ：监听的 ip 地址（默认 `127.0.0.1`，ipv6 可以监听 `::`）
    * `port` ：监听的端口号（默认 `1080` ）
    * `thread_num` ：后台工作线程个数（默认为 cpu 核心数）
 
 2. `log` 配置日志文件相关参数
    * `log_file` ：日志文件的路径（相对路径是基于构建目录的，默认为 `logs/server.log`）
-   * `max_rotate_size` ：单个滚动日志文件的最大大小（默认为 1MB）
-   * `max_rotate_count` ：最大滚动日志文件个数（默认10个）
+   * `max_rotate_size` ：单个滚动日志文件的最大大小（默认为 `1` MB）
+   * `max_rotate_count` ：最大滚动日志文件个数（默认 `10` 个）
 
 3. `auth` 配置代理服务器认证的用户名/密码
    * `username` ：用户名(需要认证则必填)
@@ -92,14 +97,21 @@ docker-compose up -d
 ## Valgrind 内存检测
 * 检测程序是否存在内存泄漏：`valgrind --leck-check=full ../bin/socks-server`
 ```valgrind
-==4706== HEAP SUMMARY:
-==4706==     in use at exit: 0 bytes in 0 blocks
-==4706==   total heap usage: 47,865 allocs, 47,865 frees, 21,989,332 bytes allocated
-==4706== 
-==4706== All heap blocks were freed -- no leaks are possible
-==4706== 
-==4706== For lists of detected and suppressed errors, rerun with: -s
-==4706== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==2058383== Memcheck, a memory error detector
+==2058383== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==2058383== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==2058383== Command: ../bin/socks_server
+==2058383== Parent PID: 2058382
+==2058383== 
+==2058383== 
+==2058383== HEAP SUMMARY:
+==2058383==     in use at exit: 0 bytes in 0 blocks
+==2058383==   total heap usage: 377,563 allocs, 377,563 frees, 138,814,722 bytes allocated
+==2058383== 
+==2058383== All heap blocks were freed -- no leaks are possible
+==2058383== 
+==2058383== For lists of detected and suppressed errors, rerun with: -s
+==2058383== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 ```
 
 ## Benchmark 压力测试
@@ -203,3 +215,4 @@ int main() {
 ## TODO
 ### 1. 功能扩展
 * 支持 `BIND` 命令
+* 支持配置数据库，添加多对用户名和密码
