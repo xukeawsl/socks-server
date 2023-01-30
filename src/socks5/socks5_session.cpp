@@ -31,9 +31,10 @@ void Socks5Session::start() {
 
 void Socks5Session::stop() {
     asio::error_code ignored_ec;
-    socket.close(ignored_ec);
-    dst_socket.close(ignored_ec);
-    deadline.cancel(ignored_ec);
+    this->udp_resolver.cancel();
+    this->socket.close(ignored_ec);
+    this->dst_socket.close(ignored_ec);
+    this->deadline.cancel(ignored_ec);
 }
 
 void Socks5Session::check_deadline() {
