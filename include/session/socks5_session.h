@@ -1,8 +1,8 @@
 #pragma once
 
 #include "common/common.h"
+#include "common/socks5_type.h"
 #include "option/parser.h"
-#include "socks5/socks5_type.h"
 
 class Socks5Session : public std::enable_shared_from_this<Socks5Session> {
 public:

@@ -1,6 +1,5 @@
-#include "socks5/socks5_server.h"
-
-#include "socks5/socks5_session.h"
+#include "server/socks5_server.h"
+#include "session/socks5_session.h"
 
 Socks5Server::Socks5Server(const std::string& host, uint16_t port,
                            size_t thread_num)

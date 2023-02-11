@@ -1,5 +1,4 @@
-#include "option/parser.h"
-#include "socks5/socks5_server.h"
+#include "socks_server.h"
 
 int main(int argc, char* argv[]) {
     // parse command options
@@ -21,7 +20,6 @@ int main(int argc, char* argv[]) {
         SPDLOG_INFO("max_rotate_count : {}",
                     ServerParser::global_config()->get_max_rotate_count());
     } else {
-        SPDLOG_INFO("Log initialization failed!");
         return EXIT_FAILURE;
     }
     Socks5Server server(ServerParser::global_config()->get_host(),

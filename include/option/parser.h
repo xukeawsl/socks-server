@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/common.h"
-#include "socks5/socks5_type.h"
+#include "common/socks5_type.h"
 
 class ServerParser {
 public:
