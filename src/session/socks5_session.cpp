@@ -95,18 +95,30 @@ void Socks5Session::get_version_and_nmethods() {
         });
 }
 
+std::string Socks5Session::methods_toString() {
+    std::string methods_String;
+    char hex[3];
+
+    for (auto method : this->methods) {
+        std::snprintf(hex, sizeof(hex), "%02x", static_cast<uint8_t>(method));
+        methods_String += std::string(hex);
+        methods_String.push_back(' ');
+    }
+
+    methods_String.pop_back();
+    return methods_String;
+}
+
 void Socks5Session::get_methods_list() {
     auto self = shared_from_this();
     asio::async_read(
         this->socket, asio::buffer(this->methods.data(), this->methods.size()),
         [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
             if (!ec) {
-                SPDLOG_DEBUG(
-                    "Client {} -> Proxy {} DATA : [METHODS "
-                    "={:Xpn}]",
-                    convert::format_address(this->tcp_cli_endpoint),
-                    convert::format_address(this->local_endpoint),
-                    spdlog::to_hex(this->methods.begin(), this->methods.end()));
+                SPDLOG_DEBUG("Client {} -> Proxy {} DATA : [METHODS = {}]",
+                             convert::format_address(this->tcp_cli_endpoint),
+                             convert::format_address(this->local_endpoint),
+                             this->methods_toString());
 
                 this->method = this->choose_method();
                 this->reply_support_method();

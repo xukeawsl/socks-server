@@ -42,6 +42,8 @@ private:
     //      (3.6) X’FF’ NO ACCEPTABLE METHODS
     void get_methods_list();
 
+    std::string methods_toString();
+
     SocksV5::Method choose_method();
 
     //  +----+--------+

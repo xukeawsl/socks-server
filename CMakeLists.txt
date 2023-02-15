@@ -14,7 +14,7 @@ endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused -DNDEBUG")
 
-add_subdirectory(third-party/spdlog-1.10.0)
+add_subdirectory(third-party/spdlog-1.9.0)
 
 message(STATUS "Build ${PROJECT_NAME}: ${PROJECT_VERSION}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")

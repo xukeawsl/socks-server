@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 namespace SocksV5 {
 // clang-format off
 
@@ -51,5 +53,17 @@ enum class ReplyATYP : uint8_t {
     Ipv6                    = 0x04,
 };
 // clang-format on
+
+struct MethodHash {
+    size_t operator()(const Method& m) const {
+        return std::hash<uint8_t>()(static_cast<uint8_t>(m));
+    }
+};
+
+struct MethodEqual {
+    bool operator()(const Method& m1, const Method& m2) const noexcept {
+        return static_cast<uint8_t>(m1) == static_cast<uint8_t>(m2);
+    }
+};
 
 }    // namespace SocksV5

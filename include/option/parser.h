@@ -54,5 +54,7 @@ private:
     long unsigned max_rotate_count;
     std::string username;
     std::string password;
-    std::unordered_set<SocksV5::Method> supported_methods;
+    std::unordered_set<SocksV5::Method, SocksV5::MethodHash,
+                       SocksV5::MethodEqual>
+        supported_methods;
 };
