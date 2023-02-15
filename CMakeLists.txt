@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.10...3.21)
+cmake_minimum_required(VERSION 3.10)
 
-project(socks_server VERSION "1.0.0" LANGUAGES CXX)
+project(socks_server VERSION "4.1" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -9,7 +9,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose Release or Debug" FORCE)
 endif()
-
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused -DNDEBUG")
