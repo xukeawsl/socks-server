@@ -17,10 +17,9 @@ void io_context_pool::run() {
             [](io_context_ptr ptr) { ptr->run(); }, io_contexts[i]));
     }
 
-    for (size_t i = 0; i < threads.size(); ++i) {
-        if (threads[i]->joinable()) {
-            threads[i]->join();
-        }
+    // must copy one shared pointer
+    for (auto thread : threads) {
+        thread->join();
     }
 }
 
