@@ -46,6 +46,7 @@ endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/../bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/../bin)
+set(SOCKS_LIB_NAME ${PROJECT_NAME}.${PROJECT_VERSION})
 
 file(GLOB_RECURSE srcs ${PROJECT_BINARY_DIR}/../src/*.cpp)
 
@@ -55,20 +56,28 @@ include_directories(
     include
 )
 
-add_executable(${PROJECT_NAME} main.cpp ${srcs})
+add_library(${SOCKS_LIB_NAME} SHARED
+    ${srcs}
+)
+
+target_link_libraries(${SOCKS_LIB_NAME} PUBLIC
+    spdlog::spdlog
+)
+
+add_executable(${PROJECT_NAME} main.cpp)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(${PROJECT_NAME} PRIVATE
+    target_link_libraries(${PROJECT_NAME} PUBLIC
         pthread 
-        spdlog::spdlog)
+        ${SOCKS_LIB_NAME})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    target_link_libraries(${PROJECT_NAME} PRIVATE
+    target_link_libraries(${PROJECT_NAME} PUBLIC
         crypt32
         secur32
         ws2_32
         wsock32
         pthread
-        spdlog::spdlog)
+        ${SOCKS_LIB_NAME})
 else()
     message(STATUS "This operating system is not supported")
 endif()
