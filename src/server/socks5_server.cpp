@@ -12,6 +12,11 @@ Socks5Server::Socks5Server(const std::string& host, uint16_t port,
       listen_endpoint(asio::ip::make_address(host), port),
       new_conn_ptr() {}
 
+Socks5Server::~Socks5Server() {
+    SPDLOG_INFO("Socks5 Server Stop");
+    spdlog::shutdown();
+}
+
 void Socks5Server::start() noexcept {
     try {
         init();
@@ -33,10 +38,13 @@ void Socks5Server::start() noexcept {
     }
 }
 
+// singal handle function
+// dont't call function spdlog::shutdown or xxx_mt logger function
+// https://github.com/gabime/spdlog/issues/1461
 void Socks5Server::stop() {
-    SPDLOG_INFO("Socks Server Stop");
+    asio::error_code ignore_ec;
+    acceptor.cancel(ignore_ec);
     pool.stop();
-    spdlog::shutdown();
 }
 
 void Socks5Server::init() {
@@ -60,7 +68,7 @@ void Socks5Server::do_accept() {
             if (!ec) {
                 this->new_conn_ptr->set_timeout(this->conn_timeout);
                 this->new_conn_ptr->start();
-            } else {
+            } else if (ec != asio::error::operation_aborted) {
                 SPDLOG_DEBUG("Failed to Accept Connection : {}", ec.message());
             }
 

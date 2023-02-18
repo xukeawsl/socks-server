@@ -9,7 +9,7 @@ class Socks5Server : public noncopyable {
 public:
     Socks5Server(const std::string& host, uint16_t port, size_t thread_num);
 
-    ~Socks5Server() = default;
+    ~Socks5Server();
 
     void start() noexcept;
 
