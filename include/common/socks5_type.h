@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 namespace SocksV5 {
 // clang-format off
 
@@ -55,9 +53,7 @@ enum class ReplyATYP : uint8_t {
 // clang-format on
 
 struct MethodHash {
-    size_t operator()(const Method& m) const {
-        return std::hash<uint8_t>()(static_cast<uint8_t>(m));
-    }
+    size_t operator()(const Method& m) const { return static_cast<size_t>(m); }
 };
 
 struct MethodEqual {

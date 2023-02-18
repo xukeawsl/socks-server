@@ -3,7 +3,6 @@
 #include <cstring>
 #include <fstream>
 #include <functional>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <thread>

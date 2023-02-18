@@ -4,7 +4,7 @@ int main(int argc, char* argv[]) {
     // parse command options
     if (ServerParser::global_config()->parse_config_file("../config.json") !=
         true) {
-        std::cout << "bad configuration file !!!" << std::endl;
+        std::printf("bad configuration file !!!");
         return EXIT_FAILURE;
     }
     // init log config
