@@ -33,7 +33,6 @@ $ cd build
 ### 2. CMake 构建
 * Linux
 ```bash
-# Linux
 cmake ..
 cmake --build .
 ```
