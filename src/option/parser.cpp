@@ -15,7 +15,13 @@ ServerParser::ServerParser()
 
 bool ServerParser::parse_config_file(const std::string& config_file) {
     std::ifstream f(config_file);
-    json data = json::parse(f);
+    json data;
+    try {
+        data = json::parse(f);
+    } catch (...) {
+        return false;
+    }
+
     auto server_config = data["server"];
     if (server_config.is_object() && !server_config.empty()) {
         if (server_config.contains("host")) {
