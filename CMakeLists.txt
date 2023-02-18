@@ -56,9 +56,7 @@ include_directories(
     include
 )
 
-add_library(${SOCKS_LIB_NAME} SHARED
-    ${srcs}
-)
+add_library(${SOCKS_LIB_NAME} SHARED ${srcs})
 
 target_link_libraries(${SOCKS_LIB_NAME} PUBLIC
     spdlog::spdlog
@@ -68,7 +66,7 @@ add_executable(${PROJECT_NAME} main.cpp)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(${PROJECT_NAME} PUBLIC
-        pthread 
+        pthread
         ${SOCKS_LIB_NAME})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_link_libraries(${PROJECT_NAME} PUBLIC
