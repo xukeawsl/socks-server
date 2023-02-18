@@ -51,31 +51,31 @@ set(SOCKS_LIB_NAME ${PROJECT_NAME}.${PROJECT_VERSION})
 file(GLOB_RECURSE srcs ${PROJECT_BINARY_DIR}/../src/*.cpp)
 
 include_directories(
-    third-party/asio-1.24.0/include
-    third-party/nlohmann-3.11.2/single_include
-    include
-)
-
-add_library(${SOCKS_LIB_NAME} SHARED ${srcs})
-
-target_link_libraries(${SOCKS_LIB_NAME} PUBLIC
-    spdlog::spdlog
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/third-party/asio-1.24.0/include
+    ${PROJECT_SOURCE_DIR}/third-party/nlohmann-3.11.2/single_include
 )
 
 add_executable(${PROJECT_NAME} main.cpp)
 
+# ---------------------------------------------------------------------------------------
+# Static/Shared library (shared not supported in windows yet)
+# ---------------------------------------------------------------------------------------
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(${PROJECT_NAME} PUBLIC
+    add_library(${SOCKS_LIB_NAME} SHARED ${srcs})
+
+    target_link_libraries(${SOCKS_LIB_NAME} PUBLIC
         pthread
-        ${SOCKS_LIB_NAME})
+        spdlog::spdlog)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    target_link_libraries(${PROJECT_NAME} PUBLIC
-        crypt32
-        secur32
+    add_library(${SOCKS_LIB_NAME} STATIC ${srcs})
+
+    target_link_libraries(${SOCKS_LIB_NAME} PUBLIC
         ws2_32
         wsock32
-        pthread
-        ${SOCKS_LIB_NAME})
+        spdlog::spdlog)
 else()
     message(STATUS "This operating system is not supported")
 endif()
+
+target_link_libraries(${PROJECT_NAME} PUBLIC ${SOCKS_LIB_NAME})
