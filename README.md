@@ -214,6 +214,23 @@ int main() {
 # -------------------------------
 ```
 
+## FlameGraph 火焰图分析
+* `ps -ef | grep socks_server` 查看 socks_server 进程的 PID (假设为 `779810`)
+* 安装好 `perf` 工具并克隆 [FlameGraph](https://github.com/brendangregg/FlameGraph) 仓库到机器上
+* 进入 `FlameGraph` 目录，依次执行以下命令
+```bash
+# 以 999Hz 的频率对进程 779810 采样 60s
+perf record -F 999 -p 779810 -g -- sleep 60
+perf script > out.perf
+
+# 折叠调用栈
+./stackcollapse-perf.pl out.perf > out.folded
+
+# 生成火焰图
+./flamegraph.pl out.folded > socks_server.svg
+```
+![socks_server.png](https://s2.loli.net/2023/05/28/yk8NHcIVhb1ur3z.png)
+
 ## 参考文档
 * [RFC1928 : SOCKS Protocol Version 5](https://www.rfc-editor.org/rfc/inline-errata/rfc1928.html)
 * [RFC1929 : Username/Password Authentication for SOCKS V5](https://www.rfc-editor.org/rfc/rfc1929.html)
