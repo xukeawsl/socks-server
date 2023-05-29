@@ -79,3 +79,26 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${SOCKS_LIB_NAME})
+
+
+# ---------------------------------------------------------------------------------------
+# Install
+# ---------------------------------------------------------------------------------------
+include(GNUInstallDirs)
+
+set(INSTALL_BINDIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/${CMAKE_BUILD_TYPE}/${CMAKE_INSTALL_BINDIR})
+set(INSTALL_SYSCONF ${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/${CMAKE_BUILD_TYPE})
+
+install(TARGETS ${PROJECT_NAME} ${SOCKS_LIB_NAME}
+    ARCHIVE
+        DESTINATION ${INSTALL_BINDIR}
+    LIBRARY
+        DESTINATION ${INSTALL_BINDIR}
+    RUNTIME
+        DESTINATION ${INSTALL_BINDIR}
+)
+
+install(
+    FILES ${CMAKE_SOURCE_DIR}/config.json
+        DESTINATION ${INSTALL_SYSCONF}
+)

@@ -53,6 +53,20 @@ cmake --build .
 cmake -DLOG_LEVEL=Info ..
 ```
 
+## 设置安装目录
+```bash
+# Linux
+cmake -DCMAKE_PREFIX=/usr/local ..
+
+# Windows
+cmake -G "MinGW Makefiles" -DCMAKE_PREFIX=D:/ ..
+```
+
+## 安装
+```bash
+cmake --build . --target install
+```
+
 ## 配置服务器参数
 * 通过修改 `config.json` 文件内容进行服务器参数配置
 ```json
@@ -237,7 +251,6 @@ perf script > out.perf
 
 ## TODO
 ### 1. 功能扩展
-* 支持安装
 * 配置文件优化
 * 支持 `BIND` 命令
 * 支持配置数据库，添加多对用户名和密码
