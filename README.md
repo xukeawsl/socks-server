@@ -64,7 +64,13 @@ cmake -G "MinGW Makefiles" -DCMAKE_PREFIX=D:/ ..
 
 ## 安装
 ```bash
+# 使用之前设置的路径安装
 cmake --build . --target install
+# 或者
+cmake --install .
+
+# 安装时指定路径
+cmake --install . --prefix /usr/local
 ```
 
 ## 配置服务器参数
