@@ -251,6 +251,25 @@ perf script > out.perf
 ```
 ![socks_server.png](https://s2.loli.net/2023/05/28/yk8NHcIVhb1ur3z.png)
 
+## 水平扩展
+* 将 `nginx` 作为 tcp 负载均衡器, 可以实现水平拓展, `nginx` 对外监听 `1080` 端口, 然后根据指定的负载均衡策略转发到相应机器上, 也可以是同一台机器上的不同端口(实现多进程), 如下配置, 负载均衡策略是优先转发到连接数最少的节点, `5000` 作为备用节点, 当 `3000` 和 `4000` 都挂掉时启用
+```conf
+stream {
+    upstream socks_server {
+        least_conn;
+        server 127.0.0.1:3000;
+        server 127.0.0.1:4000;
+        server 127.0.0.1:5000 backup;
+    }
+
+    server {
+        listen 1080;
+        proxy_pass socks_server;
+    }
+}
+```
+
+
 ## 参考文档
 * [RFC1928 : SOCKS Protocol Version 5](https://www.rfc-editor.org/rfc/inline-errata/rfc1928.html)
 * [RFC1929 : Username/Password Authentication for SOCKS V5](https://www.rfc-editor.org/rfc/rfc1929.html)
