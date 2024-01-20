@@ -7,6 +7,7 @@ int main(int argc, char* argv[]) {
         std::printf("bad configuration file !!!");
         return EXIT_FAILURE;
     }
+
     // init log config
     if (Logger::getInstance()->Init(
             ServerParser::global_config()->get_log_file(),
@@ -22,9 +23,11 @@ int main(int argc, char* argv[]) {
     } else {
         return EXIT_FAILURE;
     }
+
     Socks5Server server(ServerParser::global_config()->get_host(),
                         ServerParser::global_config()->get_port(),
                         ServerParser::global_config()->get_thread_num());
     server.start();
+
     return EXIT_SUCCESS;
 }
