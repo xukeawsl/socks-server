@@ -49,6 +49,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/../bin)
 set(SOCKS_LIB_NAME ${PROJECT_NAME}.${PROJECT_VERSION})
 
 file(GLOB_RECURSE srcs ${PROJECT_BINARY_DIR}/../src/*.cpp)
+file(GLOB_RECURSE hdrs ${PROJECT_BINARY_DIR}/../include/*.h)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
@@ -102,3 +103,41 @@ install(
     FILES ${CMAKE_SOURCE_DIR}/config.json
         DESTINATION ${INSTALL_SYSCONF}
 )
+
+# ---------------------------------------------------------------------------------------
+# Valgrind
+# ---------------------------------------------------------------------------------------
+find_program(VALGRIND_EXECUTABLE
+    NAMES "valgrind"
+    PATHS "/usr/bin" "/usr/local/bin"
+)
+
+if (VALGRIND_EXECUTABLE)
+    message(STATUS "Successfully find program `valgrind`")
+    message(STATUS "You can use the `make valgrind` command to perform memory leak detection")
+    add_custom_target(valgrind
+    COMMAND
+        ${VALGRIND_EXECUTABLE} --log-file=memcheck.log --leak-check=full $<TARGET_FILE:${PROJECT_NAME}>
+    COMMENT
+        "Perform memory leak detection, end with `Ctrl + C`"
+    )
+endif()
+
+# ---------------------------------------------------------------------------------------
+# Clang-Format
+# ---------------------------------------------------------------------------------------
+find_program(CLANG_FORMAT_EXECUTABLE
+    NAME "clang-format"
+    PATHS "/usr/bin" "/usr/local/bin"
+)
+
+if (CLANG_FORMAT_EXECUTABLE)
+    message(STATUS "Successfully find program `clang-format`")
+    message(STATUS "You can use the `make format` command to automatically format the code style")
+    add_custom_target(format ALL
+    COMMAND
+        ${CLANG_FORMAT_EXECUTABLE} --style=file -i ${hdrs};${srcs};${PROJECT_BINARY_DIR}/../main.cpp
+    COMMENT
+        "Automatically format the code style"
+    )
+endif()
