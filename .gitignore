@@ -2,7 +2,7 @@
 build/
 
 # ignore executable file
-bin/*
+bin/
 
 # ignore .vscode
 .vscode/
