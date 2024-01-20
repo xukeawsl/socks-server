@@ -1,7 +1,7 @@
 # ignore build dir
 build/
 
-# ignore executable file
+# ignore binary file
 bin/
 
 # ignore .vscode
