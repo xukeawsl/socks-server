@@ -5,6 +5,7 @@
 [![Stars](https://img.shields.io/github/stars/xukeawsl/socks-server)](https://github.com/xukeawsl/socks-server)
 [![Release](https://img.shields.io/github/v/release/xukeawsl/socks-server?color=red)](https://github.com/xukeawsl/socks-server/releases)
 [![RepoSize](https://img.shields.io/github/repo-size/xukeawsl/socks-server?color=yellow)](https://img.shields.io/github/repo-size/xukeawsl/socks-server?color=yellow)
+[![Build status](https://ci.appveyor.com/api/projects/status/iwkperf2bb9xiw0v?svg=true)](https://ci.appveyor.com/project/xukeawsl/socks-server)
 
 ## 平台
 * Linux (g++ 4.8+)
