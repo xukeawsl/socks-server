@@ -275,8 +275,6 @@ stream {
 * [RFC1928 : SOCKS Protocol Version 5](https://www.rfc-editor.org/rfc/inline-errata/rfc1928.html)
 * [RFC1929 : Username/Password Authentication for SOCKS V5](https://www.rfc-editor.org/rfc/rfc1929.html)
 
-## TODO
-### 1. 功能扩展
-* 配置文件优化
-* 支持 `BIND` 命令
-* 支持配置数据库，添加多对用户名和密码
+## 其它实现
+
+基于多进程+协程模型实现的版本（限制C++20和Linux平台）：https://github.com/xukeawsl/coro_socks

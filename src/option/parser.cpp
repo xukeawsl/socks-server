@@ -18,7 +18,8 @@ bool ServerParser::parse_config_file(const std::string& config_file) {
     json data;
     try {
         data = json::parse(f);
-    } catch (...) {
+    } catch (std::exception& e) {
+        std::printf("%s", e.what());
         return false;
     }
 
