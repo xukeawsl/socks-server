@@ -16,22 +16,22 @@ jobs:
             release_name: ubuntu-20.04
             artifact_name: socks-server-${{ github.ref }}-ubuntu-20.04.tar.gz
             binary_name: socks-server
-            package_command: tar -czvf ${{ matrix.artifact_name }} -C release .
+            package_command: tar -czvf ${{ github.ref }}-ubuntu-20.04.tar.gz -C release .
           - os: ubuntu-22.04
             release_name: ubuntu-22.04
             artifact_name: socks-server-${{ github.ref }}-ubuntu-22.04.tar.gz
             binary_name: socks-server
-            package_command: tar -czvf ${{ matrix.artifact_name }} -C release .
+            package_command: tar -czvf ${{ github.ref }}-ubuntu-22.04.tar.gz -C release .
           - os: ubuntu-18.04
             release_name: ubuntu-18.04
             artifact_name: socks-server-${{ github.ref }}-ubuntu-18.04.tar.gz
             binary_name: socks-server
-            package_command: tar -czvf ${{ matrix.artifact_name }} -C release .
+            package_command: tar -czvf ${{ github.ref }}-ubuntu-18.04.tar.gz -C release .
           - os: windows-latest
             release_name: windows-latest
             artifact_name: socks-server-${{ github.ref }}-windows-x64.zip
             binary_name: socks-server.exe
-            package_command: 7z a ${{ matrix.artifact_name }} .\release\*
+            package_command: 7z a ${{ github.ref }}-windows-x64.zip .\release\*
 
     steps:
     # 1. 检出代码
