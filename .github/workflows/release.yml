@@ -15,8 +15,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up CMake
-      uses: actions/setup-cmake@v3
+    - name: Install CMake (Ubuntu)
+      if: matrix.os == 'ubuntu-20.04'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake
+      shell: bash
+
+    - name: Install CMake (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+      shell: bash
 
     - name: Create build directory
       run: mkdir build
@@ -34,11 +44,7 @@ jobs:
 
     - name: Create release directory
       run: |
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          mkdir -p release/bin
-        else
-          mkdir -p release/bin
-        fi
+        mkdir -p release/bin
       shell: bash
 
     - name: Copy binaries and config
