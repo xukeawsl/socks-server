@@ -56,13 +56,8 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release ..
-          cmake --build . --config Release
-        else
-          cmake -DCMAKE_BUILD_TYPE=Release ..
-          make -j
-        fi
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        cmake --build .
 
     # 4. 创建发布
     - name: Create Release
