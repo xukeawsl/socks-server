@@ -14,14 +14,14 @@ jobs:
         include:
           - os: ubuntu-20.04
             release_name: ubuntu-20.04
-            artifact_name: socks-server-ubuntu-20.04.tar.gz
+            artifact_name: socks-server-${{ github.ref_name }}-ubuntu-20.04.tar.gz
             binary_name: socks_server
-            package_command: tar -czvf socks-server-ubuntu-20.04.tar.gz -C release .
+            package_command: tar -czvf socks-server-${{ github.ref_name }}-ubuntu-20.04.tar.gz -C release .
           - os: windows-latest
             release_name: windows-latest
-            artifact_name: socks-server-windows-x64.zip
+            artifact_name: socks-server-${{ github.ref_name }}-windows-x64.zip
             binary_name: socks_server.exe
-            package_command: 7z a socks-server-windows-x64.zip .\release\*
+            package_command: 7z a socks-server-${{ github.ref_name }}-windows-x64.zip .\release\*
 
     steps:
     # 1. 检出代码
@@ -46,8 +46,13 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Release ..
-        cmake --build . --config Release
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --config Release
+        else
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make -j
+        fi
 
     # 4. 调试：打印 bin 目录中的文件列表
     - name: Debug - Print bin directory
@@ -100,7 +105,7 @@ jobs:
       run: |
         mkdir -p release/bin
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cp ./bin/Release/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
+          cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
         else
           cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
         fi
@@ -109,7 +114,16 @@ jobs:
         ls -R release
         ${{ matrix.package_command }}
 
-    # 9. 上传打包文件到 GitHub Releases
+    # 9. 调试：打印打包文件信息
+    - name: Debug - Print package file info
+      shell: bash
+      run: |
+        echo "Package file info:"
+        ls -l ./${{ matrix.artifact_name }}
+        echo "File size:"
+        du -h ./${{ matrix.artifact_name }}
+
+    # 10. 上传打包文件到 GitHub Releases
     - name: Upload Package
       uses: actions/upload-release-asset@v1
       env:
