@@ -33,7 +33,7 @@ jobs:
       shell: bash
 
     - name: Configure CMake
-      run: cmake -S . -B build
+      run: cmake -DCMAKE_BUILD_TYPE=Release ..
       working-directory: ./build
       shell: bash
 
@@ -50,10 +50,10 @@ jobs:
     - name: Copy binaries and config
       run: |
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-          cp build/bin/socks_server.exe release/bin/
+          cp ./bin/Release/socks_server.exe release/bin/
           cp config.json release/
         else
-          cp build/bin/socks_server release/bin/
+          cp ./bin/socks_server release/bin/
           cp config.json release/
         fi
       shell: bash
