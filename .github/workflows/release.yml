@@ -108,7 +108,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ steps.check_release.outputs.upload_url || steps.create_release.outputs.upload_url }}
         asset_path: ./${{ matrix.artifact_name }}
         asset_name: ${{ matrix.artifact_name }}
         asset_content_type: application/octet-stream
