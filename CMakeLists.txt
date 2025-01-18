@@ -11,7 +11,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -Wall")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 add_subdirectory(third-party/spdlog-1.9.0)
 

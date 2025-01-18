@@ -7,7 +7,31 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04 # 指定 Ubuntu 20.04
+    runs-on: ${{ matrix.os }} # 使用矩阵策略
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-18.04, windows-latest] # 支持的平台
+        include:
+          - os: ubuntu-20.04
+            release_name: ubuntu-20.04
+            artifact_name: socks-server-${{ github.ref }}-ubuntu-20.04.tar.gz
+            binary_name: socks-server
+            package_command: tar -czvf ${{ matrix.artifact_name }} -C release .
+          - os: ubuntu-22.04
+            release_name: ubuntu-22.04
+            artifact_name: socks-server-${{ github.ref }}-ubuntu-22.04.tar.gz
+            binary_name: socks-server
+            package_command: tar -czvf ${{ matrix.artifact_name }} -C release .
+          - os: ubuntu-18.04
+            release_name: ubuntu-18.04
+            artifact_name: socks-server-${{ github.ref }}-ubuntu-18.04.tar.gz
+            binary_name: socks-server
+            package_command: tar -czvf ${{ matrix.artifact_name }} -C release .
+          - os: windows-latest
+            release_name: windows-latest
+            artifact_name: socks-server-${{ github.ref }}-windows-x64.zip
+            binary_name: socks-server.exe
+            package_command: 7z a ${{ matrix.artifact_name }} .\release\*
 
     steps:
     # 1. 检出代码
@@ -17,16 +41,26 @@ jobs:
     # 2. 安装构建工具
     - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          choco install 7zip
+        else
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+        fi
 
     # 3. 构建项目
     - name: Build
       run: |
         mkdir -p build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Release ..
-        make -j
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --config Release
+        else
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make -j
+        fi
 
     # 4. 创建发布
     - name: Create Release
@@ -36,7 +70,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        release_name: Release ${{ github.ref }} (${{ matrix.release_name }})
         draft: false
         prerelease: false
 
@@ -44,10 +78,9 @@ jobs:
     - name: Package Binary and Config
       run: |
         mkdir -p release/bin
-        echo "Current directory: $(pwd)" 
-        cp ./bin/socks_server release/bin/socks_server # 复制可执行文件
-        cp ./config.json release/                     # 复制配置文件
-        tar -czvf release.tar.gz -C release .         # 打包成 .tar.gz
+        cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
+        cp ./config.json release/
+        ${{ matrix.package_command }}
 
     # 6. 上传打包文件到 GitHub Releases
     - name: Upload Package
@@ -56,6 +89,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release.tar.gz
-        asset_name: socks-server-${{ github.ref }}-ubuntu-20.04.tar.gz
-        asset_content_type: application/gzip
+        asset_path: ./${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.artifact_name }}
+        asset_content_type: application/octet-stream
