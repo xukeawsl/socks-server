@@ -44,8 +44,9 @@ jobs:
     - name: Package Binary and Config
       run: |
         mkdir -p release/bin
-        cp ../bin/socks_server release/bin/socks_server # 复制可执行文件
-        cp ../config.json release/                     # 复制配置文件
+        echo "Current directory: $(pwd)" 
+        cp ./bin/socks_server release/bin/socks_server # 复制可执行文件
+        cp ./config.json release/                     # 复制配置文件
         tar -czvf release.tar.gz -C release .         # 打包成 .tar.gz
 
     # 6. 上传打包文件到 GitHub Releases
