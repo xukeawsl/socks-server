@@ -14,24 +14,24 @@ jobs:
         include:
           - os: ubuntu-20.04
             release_name: ubuntu-20.04
-            artifact_name: socks-server-${{ github.ref }}-ubuntu-20.04.tar.gz
+            artifact_name: socks-server-ubuntu-20.04.tar.gz
             binary_name: socks_server
-            package_command: tar -czvf socks-server-${{ github.ref }}-ubuntu-20.04.tar.gz -C release .
+            package_command: tar -czvf socks-server-ubuntu-20.04.tar.gz -C release .
           - os: ubuntu-22.04
             release_name: ubuntu-22.04
-            artifact_name: socks-server-${{ github.ref }}-ubuntu-22.04.tar.gz
+            artifact_name: socks-server-ubuntu-22.04.tar.gz
             binary_name: socks_server
-            package_command: tar -czvf socks-server-${{ github.ref }}-ubuntu-22.04.tar.gz -C release .
+            package_command: tar -czvf socks-server-ubuntu-22.04.tar.gz -C release .
           - os: ubuntu-18.04
             release_name: ubuntu-18.04
-            artifact_name: socks-server-${{ github.ref }}-ubuntu-18.04.tar.gz
+            artifact_name: socks-server-ubuntu-18.04.tar.gz
             binary_name: socks_server
-            package_command: tar -czvf socks-server-${{ github.ref }}-ubuntu-18.04.tar.gz -C release .
+            package_command: tar -czvf socks-server-ubuntu-18.04.tar.gz -C release .
           - os: windows-latest
             release_name: windows-latest
-            artifact_name: socks-server-${{ github.ref }}-windows-x64.zip
+            artifact_name: socks-server-windows-x64.zip
             binary_name: socks_server.exe
-            package_command: 7z a socks-server-${{ github.ref }}-windows-x64.zip .\release\*
+            package_command: 7z a socks-server-windows-x64.zip .\release\*
 
     steps:
     # 1. 检出代码
