@@ -10,23 +10,13 @@ jobs:
     runs-on: ${{ matrix.os }} # 使用矩阵策略
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-18.04, windows-latest] # 支持的平台
+        os: [ubuntu-20.04, windows-latest] # 支持的平台
         include:
           - os: ubuntu-20.04
             release_name: ubuntu-20.04
             artifact_name: socks-server-ubuntu-20.04.tar.gz
             binary_name: socks_server
             package_command: tar -czvf socks-server-ubuntu-20.04.tar.gz -C release .
-          - os: ubuntu-22.04
-            release_name: ubuntu-22.04
-            artifact_name: socks-server-ubuntu-22.04.tar.gz
-            binary_name: socks_server
-            package_command: tar -czvf socks-server-ubuntu-22.04.tar.gz -C release .
-          - os: ubuntu-18.04
-            release_name: ubuntu-18.04
-            artifact_name: socks-server-ubuntu-18.04.tar.gz
-            binary_name: socks_server
-            package_command: tar -czvf socks-server-ubuntu-18.04.tar.gz -C release .
           - os: windows-latest
             release_name: windows-latest
             artifact_name: socks-server-windows-x64.zip
@@ -76,8 +66,13 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
           });
-          const releaseExists = releases.some(release => release.tag_name === process.env.GITHUB_REF_NAME);
-          core.setOutput('exists', releaseExists);
+          const release = releases.find(release => release.tag_name === process.env.GITHUB_REF_NAME);
+          if (release) {
+            core.setOutput('upload_url', release.upload_url);
+            core.setOutput('exists', true);
+          } else {
+            core.setOutput('exists', false);
+          }
 
     # 6. 创建发布（如果不存在）
     - name: Create Release
@@ -92,17 +87,29 @@ jobs:
         draft: false
         prerelease: false
 
-    # 7. 打包 /bin/socks-server 和 config.json
+    # 7. 调试：打印 upload_url
+    - name: Debug - Print upload_url
+      shell: bash
+      run: |
+        echo "check_release.upload_url: ${{ steps.check_release.outputs.upload_url }}"
+        echo "create_release.upload_url: ${{ steps.create_release.outputs.upload_url }}"
+
+    # 8. 打包 /bin/socks-server 和 config.json
     - name: Package Binary and Config
+      shell: bash
       run: |
         mkdir -p release/bin
-        cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
+        else
+          cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
+        fi
         cp ./config.json release/
         echo "Files in release directory:"
         ls -R release
         ${{ matrix.package_command }}
 
-    # 8. 上传打包文件到 GitHub Releases
+    # 9. 上传打包文件到 GitHub Releases
     - name: Upload Package
       uses: actions/upload-release-asset@v1
       env:
