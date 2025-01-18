@@ -109,7 +109,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: socks_server-ubuntu-20.04.tar.gz
+        asset_path: artifacts/socks_server-ubuntu-20.04
         asset_name: socks_server-ubuntu-20.04.tar.gz
         asset_content_type: application/gzip
 
@@ -119,6 +119,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: socks_server-windows-latest.zip
+        asset_path: artifacts/socks_server-windows-latest
         asset_name: socks_server-windows-latest.zip
         asset_content_type: application/zip
