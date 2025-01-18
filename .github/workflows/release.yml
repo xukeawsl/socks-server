@@ -44,6 +44,7 @@ jobs:
     - name: Build
       shell: bash
       run: |
+        set -x  # 启用调试模式
         mkdir -p build
         cd build
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
@@ -53,6 +54,7 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j
         fi
+        set +x  # 关闭调试模式
 
     # 4. 调试：打印 bin 目录中的文件列表
     - name: Debug - Print bin directory
@@ -61,7 +63,39 @@ jobs:
         echo "Files in bin directory:"
         ls -R
 
-    # 5. 检查发布是否存在
+    # 5. 打包 /bin/socks-server 和 config.json
+    - name: Package Binary and Config
+      shell: bash
+      run: |
+        mkdir -p release/bin
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          cp ./bin/Release/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
+        else
+          cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
+        fi
+        cp ./config.json release/
+        echo "Files in release directory:"
+        ls -R release
+        ${{ matrix.package_command }}
+
+    # 6. 上传打包文件为 Artifact
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ./${{ matrix.artifact_name }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    # 1. 下载 Artifact
+    - name: Download Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+
+    # 2. 检查发布是否存在
     - name: Check if release exists
       id: check_release
       uses: actions/github-script@v6
@@ -79,7 +113,7 @@ jobs:
             core.setOutput('exists', false);
           }
 
-    # 6. 创建发布（如果不存在）
+    # 3. 创建发布（如果不存在）
     - name: Create Release
       if: steps.check_release.outputs.exists == 'false'
       id: create_release
@@ -88,48 +122,17 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }} (${{ matrix.release_name }})
+        release_name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
 
-    # 7. 调试：打印 upload_url
-    - name: Debug - Print upload_url
-      shell: bash
-      run: |
-        echo "check_release.upload_url: ${{ steps.check_release.outputs.upload_url }}"
-        echo "create_release.upload_url: ${{ steps.create_release.outputs.upload_url }}"
-
-    # 8. 打包 /bin/socks-server 和 config.json
-    - name: Package Binary and Config
-      shell: bash
-      run: |
-        mkdir -p release/bin
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cp ./bin/Release/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
-        else
-          cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
-        fi
-        cp ./config.json release/
-        echo "Files in release directory:"
-        ls -R release
-        ${{ matrix.package_command }}
-
-    # 9. 调试：打印打包文件信息
-    - name: Debug - Print package file info
-      shell: bash
-      run: |
-        echo "Package file info:"
-        ls -l ./${{ matrix.artifact_name }}
-        echo "File size:"
-        du -h ./${{ matrix.artifact_name }}
-
-    # 10. 上传打包文件到 GitHub Releases
+    # 4. 上传打包文件到 GitHub Releases
     - name: Upload Package
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.check_release.outputs.upload_url || steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ matrix.artifact_name }}
+        asset_path: ./artifacts/${{ matrix.artifact_name }}
         asset_name: ${{ matrix.artifact_name }}
         asset_content_type: application/octet-stream
