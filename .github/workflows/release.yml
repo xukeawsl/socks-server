@@ -16,22 +16,22 @@ jobs:
             release_name: ubuntu-20.04
             artifact_name: socks-server-${{ github.ref }}-ubuntu-20.04.tar.gz
             binary_name: socks_server
-            package_command: tar -czvf ${{ github.ref }}-ubuntu-20.04.tar.gz -C release .
+            package_command: tar -czvf socks-server-${{ github.ref }}-ubuntu-20.04.tar.gz -C release .
           - os: ubuntu-22.04
             release_name: ubuntu-22.04
             artifact_name: socks-server-${{ github.ref }}-ubuntu-22.04.tar.gz
             binary_name: socks_server
-            package_command: tar -czvf ${{ github.ref }}-ubuntu-22.04.tar.gz -C release .
+            package_command: tar -czvf socks-server-${{ github.ref }}-ubuntu-22.04.tar.gz -C release .
           - os: ubuntu-18.04
             release_name: ubuntu-18.04
             artifact_name: socks-server-${{ github.ref }}-ubuntu-18.04.tar.gz
             binary_name: socks_server
-            package_command: tar -czvf ${{ github.ref }}-ubuntu-18.04.tar.gz -C release .
+            package_command: tar -czvf socks-server-${{ github.ref }}-ubuntu-18.04.tar.gz -C release .
           - os: windows-latest
             release_name: windows-latest
             artifact_name: socks-server-${{ github.ref }}-windows-x64.zip
             binary_name: socks_server.exe
-            package_command: 7z a ${{ github.ref }}-windows-x64.zip .\release\*
+            package_command: 7z a socks-server-${{ github.ref }}-windows-x64.zip .\release\*
 
     steps:
     # 1. 检出代码
@@ -95,6 +95,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ github.ref }}-${{ matrix.release_name }}.${{ matrix.artifact_name.split('.').pop() }}
+        asset_path: ./${{ matrix.artifact_name }}
         asset_name: ${{ matrix.artifact_name }}
         asset_content_type: application/octet-stream
