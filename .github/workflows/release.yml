@@ -47,7 +47,7 @@ jobs:
         mkdir -p build
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ..
-        cmake --build .
+        cmake --build . --config Release
 
     # 4. 调试：打印 bin 目录中的文件列表
     - name: Debug - Print bin directory
@@ -100,7 +100,7 @@ jobs:
       run: |
         mkdir -p release/bin
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
+          cp ./bin/Release/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
         else
           cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
         fi
