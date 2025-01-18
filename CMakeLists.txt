@@ -59,11 +59,8 @@ include_directories(
 
 add_executable(${PROJECT_NAME} main.cpp)
 
-# ---------------------------------------------------------------------------------------
-# Static/Shared library (shared not supported in windows yet)
-# ---------------------------------------------------------------------------------------
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_library(${SOCKS_LIB_NAME} SHARED ${srcs})
+    add_library(${SOCKS_LIB_NAME} STATIC ${srcs})
 
     target_link_libraries(${SOCKS_LIB_NAME} PUBLIC
         pthread
@@ -127,14 +124,14 @@ endif()
 # Clang-Format
 # ---------------------------------------------------------------------------------------
 find_program(CLANG_FORMAT_EXECUTABLE
-    NAME "clang-format"
+    NAME "clang-format-12"
     PATHS "/usr/bin" "/usr/local/bin"
 )
 
 if (CLANG_FORMAT_EXECUTABLE)
-    message(STATUS "Successfully find program `clang-format`")
-    message(STATUS "You can use the `make format` command to automatically format the code style")
-    add_custom_target(format ALL
+    message(STATUS "Successfully find program `clang-format-12`")
+    message(STATUS "You can use the `make clang-format` command to automatically format the code style")
+    add_custom_target(clang-format
     COMMAND
         ${CLANG_FORMAT_EXECUTABLE} --style=file -i ${hdrs};${srcs};${PROJECT_BINARY_DIR}/../main.cpp
     COMMENT

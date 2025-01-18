@@ -1,0 +1,60 @@
+name: Release Socks Server (Ubuntu 20.04)
+
+on:
+  push:
+    tags:
+      - 'v*' # 匹配以 'v' 开头的标签，例如 v1.0.0
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04 # 指定 Ubuntu 20.04
+
+    steps:
+    # 1. 检出代码
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. 安装构建工具
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+
+    # 3. 构建项目
+    - name: Build
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        make -j
+
+    # 4. 创建发布
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    # 5. 打包 /bin/socks-server 和 config.json
+    - name: Package Binary and Config
+      run: |
+        mkdir -p release/bin
+        cp ./bin/socks-server release/bin/socks-server # 复制可执行文件
+        cp ./config.json release/                     # 复制配置文件
+        tar -czvf release.tar.gz -C release .         # 打包成 .tar.gz
+
+    # 6. 上传打包文件到 GitHub Releases
+    - name: Upload Package
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./release.tar.gz
+        asset_name: socks-server-${{ github.ref }}-ubuntu-20.04.tar.gz
+        asset_content_type: application/gzip
