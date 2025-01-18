@@ -44,7 +44,6 @@ jobs:
     - name: Build
       shell: bash
       run: |
-        set -x  # 启用调试模式
         mkdir -p build
         cd build
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
@@ -54,7 +53,6 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j
         fi
-        set +x  # 关闭调试模式
 
     # 4. 调试：打印 bin 目录中的文件列表
     - name: Debug - Print bin directory
