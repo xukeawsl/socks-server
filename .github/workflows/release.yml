@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'  # 触发条件：当推送的标签以 'v' 开头时触发
 
 jobs:
   build:
@@ -11,55 +11,98 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-latest]
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up CMake
-        uses: actions/setup-cmake@v3
-        with:
-          cmake-version: '3.19.0'
+    - name: Set up CMake
+      uses: actions/setup-cmake@v3
 
-      - name: Install dependencies and build
-        run: |
-          if [ $RUNNER_OS == 'Linux' ]; then
-            sudo apt-get install -y build-essential
-          elif [ $RUNNER_OS == 'Windows' ]; then
-            choco install cmake
-          fi
-          mkdir build && cd build && cmake .. && cmake --build .
+    - name: Create build directory
+      run: mkdir build
+      shell: bash
 
-      - name: Prepare and compress build artifacts
-        run: |
-          mkdir -p release
-          cp ./bin/socks_server ./config.json release/
-          if [ $RUNNER_OS == 'Linux' ]; then
-            tar -czf socks-server-linux.tar.gz -C release .
-          elif [ $RUNNER_OS == 'Windows' ]; then
-            zip -r socks-server-windows.zip release/
-          fi
+    - name: Configure CMake
+      run: cmake -S . -B build
+      working-directory: ./build
+      shell: bash
 
-      - name: Upload compressed artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: release-${{ matrix.os }}
-          path: |
-            socks-server-linux.tar.gz
-            socks-server-windows.zip
+    - name: Build project
+      run: cmake --build . --config Release
+      working-directory: ./build
+      shell: bash
+
+    - name: Create release directory
+      run: |
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          mkdir -p release/bin
+        else
+          mkdir -p release/bin
+        fi
+      shell: bash
+
+    - name: Copy binaries and config
+      run: |
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          cp build/bin/socks_server.exe release/bin/
+          cp config.json release/
+        else
+          cp build/bin/socks_server release/bin/
+          cp config.json release/
+        fi
+      shell: bash
+
+    - name: Package release
+      run: |
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          7z a socks_server-${{ matrix.os }}.zip ./release/*
+        else
+          tar -czvf socks_server-${{ matrix.os }}.tar.gz -C release .
+        fi
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: socks_server-${{ matrix.os }}
+        path: socks_server-${{ matrix.os }}.${{ runner.os == 'Windows' && 'zip' || 'tar.gz' }}
 
   release:
+    runs-on: ubuntu-latest
     needs: build
-    runs-on: ubuntu-20.04
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
 
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          files: |
-            socks-server-linux.tar.gz
-            socks-server-windows.zip
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/socks_server-ubuntu-20.04.tar.gz
+        asset_name: socks_server-ubuntu-20.04.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/socks_server-windows-latest.zip
+        asset_name: socks_server-windows-latest.zip
+        asset_content_type: application/zip
