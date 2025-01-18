@@ -84,6 +84,8 @@ jobs:
         mkdir -p release/bin
         cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
         cp ./config.json release/
+        echo "Files in release directory:"
+        ls -R release
         ${{ matrix.package_command }}
 
     # 6. 上传打包文件到 GitHub Releases
@@ -93,6 +95,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ matrix.artifact_name }}
+        asset_path: ./${{ github.ref }}-${{ matrix.release_name }}.${{ matrix.artifact_name.split('.').pop() }}
         asset_name: ${{ matrix.artifact_name }}
         asset_content_type: application/octet-stream
