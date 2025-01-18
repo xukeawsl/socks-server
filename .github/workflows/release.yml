@@ -86,6 +86,15 @@ jobs:
   release:
     runs-on: ubuntu-latest
     needs: build
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, windows-latest] # 支持的平台
+        include:
+          - os: ubuntu-20.04
+            artifact_name: socks-server-${{ github.ref_name }}-ubuntu-20.04.tar.gz
+          - os: windows-latest
+            artifact_name: socks-server-${{ github.ref_name }}-windows-x64.zip
+
     steps:
     # 1. 下载 Artifact
     - name: Download Artifacts
@@ -93,7 +102,14 @@ jobs:
       with:
         path: ./artifacts
 
-    # 2. 检查发布是否存在
+    # 2. 调试：打印下载的文件列表
+    - name: Debug - Print downloaded files
+      shell: bash
+      run: |
+        echo "Files in artifacts directory:"
+        ls -R ./artifacts
+
+    # 3. 检查发布是否存在
     - name: Check if release exists
       id: check_release
       uses: actions/github-script@v6
@@ -111,7 +127,7 @@ jobs:
             core.setOutput('exists', false);
           }
 
-    # 3. 创建发布（如果不存在）
+    # 4. 创建发布（如果不存在）
     - name: Create Release
       if: steps.check_release.outputs.exists == 'false'
       id: create_release
@@ -124,7 +140,15 @@ jobs:
         draft: false
         prerelease: false
 
-    # 4. 上传打包文件到 GitHub Releases
+    # 5. 调试：打印 upload_url 和 artifact_name
+    - name: Debug - Print upload_url and artifact_name
+      shell: bash
+      run: |
+        echo "check_release.upload_url: ${{ steps.check_release.outputs.upload_url }}"
+        echo "create_release.upload_url: ${{ steps.create_release.outputs.upload_url }}"
+        echo "artifact_name: ${{ matrix.artifact_name }}"
+
+    # 6. 上传打包文件到 GitHub Releases
     - name: Upload Package
       uses: actions/upload-release-asset@v1
       env:
