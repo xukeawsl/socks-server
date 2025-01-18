@@ -47,21 +47,14 @@ jobs:
         mkdir -p build
         cd build
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cmake -DCMAKE_BUILD_TYPE=Release ..
+          cmake -DCMAKE_BUILD_TYPE=Release .. 
           cmake --build . --config Release
         else
-          cmake -DCMAKE_BUILD_TYPE=Release ..
+          cmake -DCMAKE_BUILD_TYPE=Release .. 
           make -j
         fi
 
-    # 4. 调试：打印 bin 目录中的文件列表
-    - name: Debug - Print bin directory
-      shell: bash
-      run: |
-        echo "Files in bin directory:"
-        ls -R
-
-    # 5. 打包 /bin/socks-server 和 config.json
+    # 4. 打包 /bin/socks-server 和 config.json
     - name: Package Binary and Config
       shell: bash
       run: |
@@ -76,12 +69,12 @@ jobs:
         ls -R release
         ${{ matrix.package_command }}
 
-    # 6. 上传打包文件为 Artifact
+    # 5. 上传打包文件为 Artifact
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.artifact_name }}
-        path: ./${{ matrix.artifact_name }}
+        path: ./release/${{ matrix.artifact_name }}
 
   release:
     runs-on: ubuntu-latest
