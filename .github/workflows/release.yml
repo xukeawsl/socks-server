@@ -40,6 +40,7 @@ jobs:
 
     # 2. 安装构建工具
     - name: Install dependencies
+      shell: bash
       run: |
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
