@@ -52,6 +52,7 @@ jobs:
 
     # 3. 构建项目
     - name: Build
+      shell: bash
       run: |
         mkdir -p build
         cd build
