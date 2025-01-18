@@ -59,6 +59,13 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Release ..
         cmake --build .
 
+    # 调试：打印 bin 目录中的文件列表
+    - name: Debug - Print bin directory
+      shell: bash
+      run: |
+        echo "Files in bin directory:"
+        ls -R
+
     # 4. 创建发布
     - name: Create Release
       id: create_release
