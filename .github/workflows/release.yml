@@ -67,6 +67,11 @@ jobs:
         fi
       shell: bash
 
+    - name: Debug artifacts
+      run: |
+        ls -lR
+      shell: bash
+
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
@@ -81,6 +86,11 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         path: artifacts
+
+    - name: Debug downloaded artifacts
+      run: |
+        ls -lR artifacts
+      shell: bash
 
     - name: Create release
       id: create_release
