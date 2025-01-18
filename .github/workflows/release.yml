@@ -90,6 +90,10 @@ jobs:
 
     steps:
     # 1. 下载 Artifact
+    - name: Create artifacts directory
+      run: |
+        mkdir -p ./artifacts
+
     - name: Download Artifacts
       uses: actions/download-artifact@v3
       with:
