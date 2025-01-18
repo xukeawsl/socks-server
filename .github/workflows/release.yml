@@ -59,26 +59,40 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Release ..
         cmake --build .
 
-    # 调试：打印 bin 目录中的文件列表
+    # 4. 调试：打印 bin 目录中的文件列表
     - name: Debug - Print bin directory
       shell: bash
       run: |
         echo "Files in bin directory:"
         ls -R
 
-    # 4. 创建发布
+    # 5. 检查发布是否存在
+    - name: Check if release exists
+      id: check_release
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { data: releases } = await github.rest.repos.listReleases({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+          });
+          const releaseExists = releases.some(release => release.tag_name === process.env.GITHUB_REF_NAME);
+          core.setOutput('exists', releaseExists);
+
+    # 6. 创建发布（如果不存在）
     - name: Create Release
+      if: steps.check_release.outputs.exists == 'false'
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }} (${{ matrix.release_name }})
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }} (${{ matrix.release_name }})
         draft: false
         prerelease: false
 
-    # 5. 打包 /bin/socks-server 和 config.json
+    # 7. 打包 /bin/socks-server 和 config.json
     - name: Package Binary and Config
       run: |
         mkdir -p release/bin
@@ -88,7 +102,7 @@ jobs:
         ls -R release
         ${{ matrix.package_command }}
 
-    # 6. 上传打包文件到 GitHub Releases
+    # 8. 上传打包文件到 GitHub Releases
     - name: Upload Package
       uses: actions/upload-release-asset@v1
       env:
