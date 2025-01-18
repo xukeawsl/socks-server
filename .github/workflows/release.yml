@@ -1,159 +1,65 @@
-name: Release Socks Server (Multi-Platform)
+name: Build and Release
 
 on:
   push:
     tags:
-      - 'v*' # 匹配以 'v' 开头的标签，例如 v1.0.0
+      - 'v*'
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }} # 使用矩阵策略
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest] # 支持的平台
-        include:
-          - os: ubuntu-20.04
-            release_name: ubuntu-20.04
-            artifact_name: socks-server-${{ github.ref_name }}-ubuntu-20.04.tar.gz
-            binary_name: socks_server
-            package_command: tar -czvf socks-server-${{ github.ref_name }}-ubuntu-20.04.tar.gz -C release .
-          - os: windows-latest
-            release_name: windows-latest
-            artifact_name: socks-server-${{ github.ref_name }}-windows-x64.zip
-            binary_name: socks_server.exe
-            package_command: 7z a socks-server-${{ github.ref_name }}-windows-x64.zip .\release\*
+        os: [ubuntu-20.04, windows-latest]
 
     steps:
-    # 1. 检出代码
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    # 2. 安装构建工具
-    - name: Install dependencies
-      shell: bash
-      run: |
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-          choco install 7zip
-        else
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake
-        fi
+      - name: Set up CMake
+        uses: akc-cmaketools/cmake-action@v1
+        with:
+          cmake-version: '3.19.0'
 
-    # 3. 构建项目
-    - name: Build
-      shell: bash
-      run: |
-        mkdir -p build
-        cd build
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cmake -DCMAKE_BUILD_TYPE=Release .. 
-          cmake --build . --config Release
-        else
-          cmake -DCMAKE_BUILD_TYPE=Release .. 
-          make -j
-        fi
+      - name: Install dependencies and build
+        run: |
+          if [ $RUNNER_OS == 'Linux' ]; then
+            sudo apt-get install -y build-essential
+          elif [ $RUNNER_OS == 'Windows' ]; then
+            choco install cmake
+          fi
+          mkdir build && cd build && cmake .. && cmake --build .
 
-    # 4. 打包 /bin/socks-server 和 config.json
-    - name: Package Binary and Config
-      shell: bash
-      run: |
-        mkdir -p release/bin
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cp ./bin/Release/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
-        else
-          cp ./bin/${{ matrix.binary_name }} release/bin/${{ matrix.binary_name }}
-        fi
-        cp ./config.json release/
-        echo "Files in release directory:"
-        ls -R release
-        ${{ matrix.package_command }}
+      - name: Prepare and compress build artifacts
+        run: |
+          mkdir -p release
+          cp ./bin/socks_server ./config.json release/
+          if [ $RUNNER_OS == 'Linux' ]; then
+            tar -czf socks-server-linux.tar.gz -C release .
+          elif [ $RUNNER_OS == 'Windows' ]; then
+            zip -r socks-server-windows.zip release/
+          fi
 
-    # 5. 上传打包文件为 Artifact
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ matrix.artifact_name }}
-        path: ./release/${{ matrix.artifact_name }}
+      - name: Upload compressed artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-${{ matrix.os }}
+          path: |
+            socks-server-linux.tar.gz
+            socks-server-windows.zip
 
   release:
-    runs-on: ubuntu-latest
     needs: build
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, windows-latest] # 支持的平台
-        include:
-          - os: ubuntu-20.04
-            artifact_name: socks-server-${{ github.ref_name }}-ubuntu-20.04.tar.gz
-          - os: windows-latest
-            artifact_name: socks-server-${{ github.ref_name }}-windows-x64.zip
-
+    runs-on: ubuntu-20.04
     steps:
-    # 1. 创建 artifacts 目录
-    - name: Create artifacts directory
-      run: |
-        mkdir -p ./artifacts
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    # 2. 下载 Artifact
-    - name: Download Artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: ${{ matrix.artifact_name }}
-        path: ./artifacts
-
-    # 3. 调试：打印下载的文件列表
-    - name: Debug - Print downloaded files
-      shell: bash
-      run: |
-        echo "Files in artifacts directory:"
-        ls -R ./artifacts
-
-    # 4. 检查发布是否存在
-    - name: Check if release exists
-      id: check_release
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const { data: releases } = await github.rest.repos.listReleases({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-          });
-          const release = releases.find(release => release.tag_name === process.env.GITHUB_REF_NAME);
-          if (release) {
-            core.setOutput('upload_url', release.upload_url);
-            core.setOutput('exists', true);
-          } else {
-            core.setOutput('exists', false);
-          }
-
-    # 5. 创建发布（如果不存在）
-    - name: Create Release
-      if: steps.check_release.outputs.exists == 'false'
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-
-    # 6. 调试：打印 upload_url 和 artifact_name
-    - name: Debug - Print upload_url and artifact_name
-      shell: bash
-      run: |
-        echo "check_release.upload_url: ${{ steps.check_release.outputs.upload_url }}"
-        echo "create_release.upload_url: ${{ steps.create_release.outputs.upload_url }}"
-        echo "artifact_name: ${{ matrix.artifact_name }}"
-
-    # 7. 上传打包文件到 GitHub Releases
-    - name: Upload Package
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.check_release.outputs.upload_url || steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/${{ matrix.artifact_name }}
-        asset_name: ${{ matrix.artifact_name }}
-        asset_content_type: application/octet-stream
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            socks-server-linux.tar.gz
+            socks-server-windows.zip
