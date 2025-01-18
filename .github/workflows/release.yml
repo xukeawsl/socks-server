@@ -89,24 +89,26 @@ jobs:
             artifact_name: socks-server-${{ github.ref_name }}-windows-x64.zip
 
     steps:
-    # 1. 下载 Artifact
+    # 1. 创建 artifacts 目录
     - name: Create artifacts directory
       run: |
         mkdir -p ./artifacts
 
+    # 2. 下载 Artifact
     - name: Download Artifacts
       uses: actions/download-artifact@v3
       with:
+        name: ${{ matrix.artifact_name }}
         path: ./artifacts
 
-    # 2. 调试：打印下载的文件列表
+    # 3. 调试：打印下载的文件列表
     - name: Debug - Print downloaded files
       shell: bash
       run: |
         echo "Files in artifacts directory:"
         ls -R ./artifacts
 
-    # 3. 检查发布是否存在
+    # 4. 检查发布是否存在
     - name: Check if release exists
       id: check_release
       uses: actions/github-script@v6
@@ -124,7 +126,7 @@ jobs:
             core.setOutput('exists', false);
           }
 
-    # 4. 创建发布（如果不存在）
+    # 5. 创建发布（如果不存在）
     - name: Create Release
       if: steps.check_release.outputs.exists == 'false'
       id: create_release
@@ -137,7 +139,7 @@ jobs:
         draft: false
         prerelease: false
 
-    # 5. 调试：打印 upload_url 和 artifact_name
+    # 6. 调试：打印 upload_url 和 artifact_name
     - name: Debug - Print upload_url and artifact_name
       shell: bash
       run: |
@@ -145,7 +147,7 @@ jobs:
         echo "create_release.upload_url: ${{ steps.create_release.outputs.upload_url }}"
         echo "artifact_name: ${{ matrix.artifact_name }}"
 
-    # 6. 上传打包文件到 GitHub Releases
+    # 7. 上传打包文件到 GitHub Releases
     - name: Upload Package
       uses: actions/upload-release-asset@v1
       env:
