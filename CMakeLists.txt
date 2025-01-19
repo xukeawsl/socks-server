@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(socks_server VERSION "4.4" LANGUAGES CXX)
+project(socks_server VERSION "4.5" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
