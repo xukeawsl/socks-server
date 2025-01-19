@@ -89,9 +89,12 @@ jobs:
     - name: Upload release assets
       run: |
         for file in artifacts/*; do
-          name=$(basename "$file")
-          echo "Uploading $name..."
-          gh release upload ${{ github.ref_name }} "$file" --clobber
+          if [[ -f "$file" ]]; then  # 仅上传文件，忽略目录
+            name=$(basename "$file")
+            echo "Uploading $name..."
+            gh release upload ${{ github.ref_name }} "$file" --clobber
+          fi
         done
+      shell: bash
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
