@@ -10,34 +10,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, centos-7, centos-8, centos-9, windows-latest, windows-2016, windows-2019, windows-2022]
+        os: [ubuntu-latest, ubuntu-22.04, ubuntu-20.04, windows-latest, windows-2022, windows-2019]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install CMake (Ubuntu)
-      if: contains(matrix.os, 'ubuntu')
+    - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake
-      shell: bash
-
-    - name: Install CMake (CentOS)
-      if: contains(matrix.os, 'centos')
-      run: |
-        sudo yum update -y
-        sudo yum install -y cmake3
-        sudo ln -s /usr/bin/cmake3 /usr/bin/cmake
-      shell: bash
-
-    - name: Install CMake (Windows)
-      if: startsWith(matrix.os, 'windows')
-      run: |
-        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          sudo apt-get update
+          sudo apt-get install -y cmake
+        elif [[ "${{ runner.os }}" == "Windows" ]]; then
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        fi
       shell: bash
 
     - name: Create build directory
-      run: mkdir build
+      run: mkdir -p build
       shell: bash
 
     - name: Configure CMake
@@ -50,23 +39,15 @@ jobs:
       working-directory: ./build
       shell: bash
 
-    - name: Create release directory
-      run: mkdir -p release/bin
-      shell: bash
-
-    - name: Copy binaries and config
+    - name: Package binaries and config
       run: |
+        mkdir -p release/bin
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           cp ./bin/Release/socks_server.exe release/bin/
-          cp config.json release/
         else
           cp ./bin/socks_server release/bin/
-          cp config.json release/
         fi
-      shell: bash
-
-    - name: Package release
-      run: |
+        cp config.json release/
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           7z a socks_server-${{ matrix.os }}.zip ./release/*
         else
@@ -74,15 +55,13 @@ jobs:
         fi
       shell: bash
 
-    - name: Debug artifacts
-      run: ls -lR
-      shell: bash
-
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: socks_server-${{ matrix.os }}
-        path: socks_server-${{ matrix.os }}.${{ runner.os == 'Windows' && 'zip' || 'tar.gz' }}
+        path: |
+          socks_server-${{ matrix.os }}.zip
+          socks_server-${{ matrix.os }}.tar.gz
 
   release:
     runs-on: ubuntu-latest
@@ -103,117 +82,22 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
 
     - name: Upload release assets
-      uses: actions/upload-release-asset@v1
+      run: |
+        for artifact in artifacts/*; do
+          ext="${artifact##*.}"
+          content_type=""
+          if [[ "$ext" == "zip" ]]; then
+            content_type="application/zip"
+          elif [[ "$ext" == "gz" ]]; then
+            content_type="application/gzip"
+          fi
+          gh release upload ${{ github.ref_name }} "$artifact" --clobber --content-type "$content_type"
+        done
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-ubuntu-latest/socks_server-ubuntu-latest.tar.gz
-        asset_name: socks_server-ubuntu-latest.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-ubuntu-18.04/socks_server-ubuntu-18.04.tar.gz
-        asset_name: socks_server-ubuntu-18.04.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-ubuntu-20.04/socks_server-ubuntu-20.04.tar.gz
-        asset_name: socks_server-ubuntu-20.04.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-ubuntu-22.04/socks_server-ubuntu-22.04.tar.gz
-        asset_name: socks_server-ubuntu-22.04.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-centos-7/socks_server-centos-7.tar.gz
-        asset_name: socks_server-centos-7.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-centos-8/socks_server-centos-8.tar.gz
-        asset_name: socks_server-centos-8.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-centos-9/socks_server-centos-9.tar.gz
-        asset_name: socks_server-centos-9.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-windows-latest/socks_server-windows-latest.zip
-        asset_name: socks_server-windows-latest.zip
-        asset_content_type: application/zip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-windows-2016/socks_server-windows-2016.zip
-        asset_name: socks_server-windows-2016.zip
-        asset_content_type: application/zip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-windows-2019/socks_server-windows-2019.zip
-        asset_name: socks_server-windows-2019.zip
-        asset_content_type: application/zip
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/socks_server-windows-2022/socks_server-windows-2022.zip
-        asset_name: socks_server-windows-2022.zip
-        asset_content_type: application/zip
