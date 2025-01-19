@@ -44,13 +44,9 @@ jobs:
         mkdir -p release/bin
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           cp ./bin/Release/socks_server.exe release/bin/
-        else
-          cp ./bin/socks_server release/bin/
-        fi
-        cp config.json release/
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
           7z a socks_server-${{ matrix.os }}.zip ./release/*
         else
+          cp ./bin/socks_server release/bin/
           tar -czvf socks_server-${{ matrix.os }}.tar.gz -C release .
         fi
       shell: bash
@@ -88,11 +84,15 @@ jobs:
 
     - name: Upload release assets
       run: |
-        for file in artifacts/*; do
-          if [[ -f "$file" ]]; then  # 仅上传文件，忽略目录
-            name=$(basename "$file")
-            echo "Uploading $name..."
-            gh release upload ${{ github.ref_name }} "$file" --clobber
+        # 遍历每个目录并找到打包好的文件
+        for dir in artifacts/*; do
+          if [[ -d "$dir" ]]; then
+            file=$(find "$dir" -type f \( -name "*.zip" -o -name "*.tar.gz" \))
+            if [[ -n "$file" ]]; then
+              name=$(basename "$file")
+              echo "Uploading $name..."
+              gh release upload ${{ github.ref_name }} "$file" --clobber
+            fi
           fi
         done
       shell: bash
