@@ -42,6 +42,7 @@ jobs:
     - name: Package binaries and config
       run: |
         mkdir -p release/bin
+        cp ./config.json release/
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           cp ./bin/Release/socks_server.exe release/bin/
           7z a socks_server-${{ matrix.os }}.zip ./release/*
