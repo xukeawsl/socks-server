@@ -35,7 +35,7 @@ jobs:
       shell: bash
 
     - name: Build project
-      run: cmake --build . --config Release
+      run: cmake --build . --parallel --config Release
       working-directory: ./build
       shell: bash
 
@@ -53,7 +53,7 @@ jobs:
       shell: bash
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: socks_server-${{ matrix.os }}
         path: |
@@ -62,13 +62,16 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     needs: build
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: artifacts
 
